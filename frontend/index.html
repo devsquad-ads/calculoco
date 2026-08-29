@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculoco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sun" aria-hidden="true"></div>
+
+<!-- ===================== TELA 1: CÓDIGO DA TURMA ===================== -->
+<section class="tela ativa" id="tela-turma">
+  <div class="cartao-login">
+    <img class="logo-login" src="calculoco-logo.jpeg" alt="Logo Calculoco" onerror="this.style.display='none'">
+    <h1>Bem-vindo ao Calculoco!</h1>
+    <p class="sub">PENSE · CALCULE · ACERTE · DIVIRTA-SE!</p>
+
+    <form id="form-turma">
+      <label class="sr-only" for="campo-codigo-turma">Código da turma</label>
+      <input type="text" id="campo-codigo-turma" placeholder="Código da turma (ex: 5638)"
+             inputmode="numeric" maxlength="4" pattern="\d{4}" autocomplete="off" required>
+      <button type="submit" class="btn-grande btn-laranja" id="btn-entrar-turma">🐒 Entrar na turma</button>
+    </form>
+    <p class="aviso" id="aviso-turma"></p>
+
+    <details class="area-professor">
+      <summary>Sou professor(a) e quero cadastrar uma turma</summary>
+      <form id="form-nova-turma">
+        <input type="text" id="campo-nome-turma" placeholder="Nome da turma (ex: 3º Ano B)" required>
+        <input type="text" id="campo-nome-professor" placeholder="Seu nome" required>
+        <button type="submit" class="btn-grande btn-linha-cheia">Criar turma</button>
+      </form>
+      <p class="aviso" id="aviso-nova-turma"></p>
+    </details>
+  </div>
+</section>
+
+<!-- ===================== TELA 2: LOGIN / CADASTRO DO ALUNO ===================== -->
+<section class="tela" id="tela-auth">
+  <div class="cartao-login">
+    <img class="logo-login" src="calculoco-logo.jpeg" alt="Logo Calculoco" onerror="this.style.display='none'">
+    <h1 id="titulo-auth">Turma encontrada!</h1>
+    <p class="sub" id="sub-auth">Agora entre com seu usuário</p>
+
+    <div class="abas">
+      <button type="button" class="aba ativa" id="aba-entrar" data-aba="entrar">Entrar</button>
+      <button type="button" class="aba" id="aba-criar" data-aba="criar">Criar conta</button>
+    </div>
+
+    <form id="form-auth">
+      <label class="sr-only" for="campo-usuario">Nome de usuário</label>
+      <input type="text" id="campo-usuario" placeholder="Seu nome de usuário" autocomplete="off" required>
+
+      <label class="sr-only" for="campo-pin">PIN de 4 dígitos</label>
+      <input type="password" id="campo-pin" placeholder="PIN (4 números)"
+             inputmode="numeric" maxlength="4" pattern="\d{4}" autocomplete="off" required>
+
+      <button type="submit" class="btn-grande btn-laranja" id="btn-confirmar-auth">🐒 Entrar</button>
+    </form>
+    <p class="aviso" id="aviso-auth"></p>
+    <button type="button" class="btn-linha" id="btn-trocar-turma">← Trocar de turma</button>
+  </div>
+</section>
+
+<!-- ===================== TELA 3: MENU / MÓDULOS E NÍVEIS ===================== -->
+<section class="tela" id="tela-menu">
+  <header class="topo">
+    <div class="marca">
+      <img src="calculoco-logo.jpeg" alt="Logo Calculoco" onerror="this.style.display='none'">
+      <div>
+        <div class="titulo">Calculoco</div>
+        <div class="sub-topo" id="saudacao">Olá! 👋</div>
+      </div>
+    </div>
+    <button class="btn-linha" id="btn-sair">Sair</button>
+  </header>
+
+  <div class="faixa">
+    <h1>Escolha um módulo e um nível!</h1>
+    <p>Complete um nível para desbloquear o próximo 🔓</p>
+  </div>
+
+  <div class="grade-fases" id="grade-fases"></div>
+
+  <footer>Calculoco &mdash; Aprender matemática nunca foi tão divertido 🐒</footer>
+</section>
+
+<!-- ===================== TELA 4: JOGO (PERGUNTA) ===================== -->
+<section class="tela" id="tela-jogo">
+  <header class="topo">
+    <button class="btn-linha" id="btn-voltar-menu">← Voltar</button>
+    <span class="pill-fase" id="pill-fase">Adição · Nível 1 de 5</span>
+  </header>
+
+  <div class="area-jogo" id="area-jogo">
+    <div class="cenario-decor" id="cenario-decor" aria-hidden="true"></div>
+
+    <div class="linha-mascote">
+      <div class="mascote" aria-hidden="true">🐒</div>
+      <div class="balao-fala">
+        <p class="enunciado" id="texto-enunciado">Carregando pergunta...</p>
+      </div>
+    </div>
+
+    <div class="cartao-pergunta">
+      <div class="opcoes" id="opcoes-resposta"></div>
+      <p class="feedback" id="texto-feedback"></p>
+      <button class="cta-jogar oculto" id="btn-continuar-jogo">Continuar ▶</button>
+      <button class="cta-jogar oculto btn-tentar-de-novo" id="btn-tentar-novamente">Tentar novamente 🔁</button>
+    </div>
+  </div>
+</section>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js" type="module"></script>
+</body>
+</html>
