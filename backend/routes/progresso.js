@@ -1,0 +1,47 @@
+const express = require("express");
+const router = express.Router();
+const supabase = require("../supabaseClient");
+
+// GET /api/progresso/:aluno_id
+router.get("/:aluno_id", async (req, res) => {
+  const { aluno_id } = req.params;
+
+  const { data, error } = await supabase
+    .from("progresso")
+    .select("fase_numero, concluida, acertos, erros")
+    .eq("aluno_id", aluno_id)
+    .order("fase_numero", { ascending: true });
+
+  if (error) return res.status(500).json({ erro: error.message });
+  res.json({ progresso: data });
+});
+
+// POST /api/progresso  { aluno_id, fase_numero, concluida, acertos, erros }
+router.post("/", async (req, res) => {
+  const { aluno_id, fase_numero, concluida, acertos, erros } = req.body;
+
+  if (!aluno_id || !fase_numero) {
+    return res.status(400).json({ erro: "aluno_id e fase_numero são obrigatórios." });
+  }
+
+  const { data, error } = await supabase
+    .from("progresso")
+    .upsert(
+      {
+        aluno_id,
+        fase_numero,
+        concluida: !!concluida,
+        acertos: acertos || 0,
+        erros: erros || 0,
+        atualizado_em: new Date().toISOString(),
+      },
+      { onConflict: "aluno_id,fase_numero" }
+    )
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ erro: error.message });
+  res.status(201).json(data);
+});
+
+module.exports = router;
