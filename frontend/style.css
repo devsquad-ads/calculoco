@@ -96,7 +96,7 @@ body{
   margin:0 0 22px;
 }
 
-#form-turma input, #form-auth input, #form-nova-turma input{
+#form-turma input, #form-auth input, #form-professor-auth input{
   width:100%;
   font-family:var(--font-body);
   font-size:16px;
@@ -111,8 +111,8 @@ body{
   text-align:center;
   letter-spacing:1px;
 }
-#form-turma input:focus, #form-auth input:focus, #form-nova-turma input:focus{border-color:var(--azul-ceu);}
-#form-turma input::placeholder, #form-auth input::placeholder, #form-nova-turma input::placeholder{
+#form-turma input:focus, #form-auth input:focus, #form-professor-auth input:focus{border-color:var(--azul-ceu);}
+#form-turma input::placeholder, #form-auth input::placeholder, #form-professor-auth input::placeholder{
   color:#9AACD1; letter-spacing:normal;
 }
 
@@ -143,23 +143,6 @@ body{
   color:var(--rosa);
   margin:12px 0 0;
 }
-
-.area-professor{
-  margin-top:22px;
-  text-align:left;
-  border-top:2px dashed #DCE6F7;
-  padding-top:16px;
-}
-.area-professor summary{
-  cursor:pointer;
-  font-weight:700;
-  font-size:13px;
-  color:#3B5590;
-  text-align:center;
-  list-style:none;
-}
-.area-professor summary::-webkit-details-marker{display:none;}
-.area-professor form{margin-top:14px;}
 
 .abas{
   display:flex;
@@ -199,6 +182,7 @@ body{
 .btn-linha:hover{background:#fff; transform:translateY(-1px);}
 .btn-linha:focus-visible{outline:3px solid var(--azul-noite); outline-offset:2px;}
 #btn-trocar-turma{margin-top:18px; width:100%;}
+.btn-ir-professor{margin-top:18px; width:100%;}
 
 /* ===================== TOPO / CABEÇALHO COMUM ===================== */
 .topo{
@@ -499,4 +483,153 @@ footer{
   .btn-opcao{font-size:19px; padding:16px 8px;}
   .linha-mascote{gap:8px;}
   .mascote{width:52px; height:52px; font-size:28px;}
+}
+
+/* ===================== ÁREA DO PROFESSOR: MINHAS TURMAS ===================== */
+.area-nova-turma{
+  max-width:640px;
+  margin:0 auto 8px;
+  padding:0 5vw;
+}
+.area-nova-turma form{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:flex-start;
+}
+.area-nova-turma input{
+  flex:1;
+  min-width:220px;
+  font-family:var(--font-body);
+  font-size:15px;
+  font-weight:700;
+  padding:14px 16px;
+  border-radius:14px;
+  border:3px solid #DCE6F7;
+  outline:none;
+  color:var(--azul-noite);
+  transition:border-color .15s ease;
+}
+.area-nova-turma input:focus{border-color:var(--azul-ceu);}
+.area-nova-turma .btn-grande{width:auto; padding:14px 22px; white-space:nowrap;}
+.area-nova-turma .aviso{max-width:640px;}
+
+.lista-turmas{
+  max-width:900px;
+  margin:20px auto 10px;
+  padding:0 5vw 40px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+  gap:18px;
+}
+.cartao-turma{
+  background:var(--branco);
+  border:none;
+  text-align:left;
+  border-radius:20px;
+  padding:20px 20px 18px;
+  cursor:pointer;
+  box-shadow:0 8px 0 rgba(18,40,92,0.15);
+  transition:transform .14s ease, box-shadow .14s ease;
+  font-family:var(--font-body);
+}
+.cartao-turma:hover{transform:translateY(-3px);}
+.cartao-turma:active{transform:translateY(1px); box-shadow:0 4px 0 rgba(18,40,92,0.15);}
+.cartao-turma:focus-visible{outline:3px solid var(--azul-noite); outline-offset:3px;}
+.cartao-turma .nome-turma{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:18px;
+  color:var(--azul-noite);
+  margin-bottom:6px;
+}
+.cartao-turma .codigo-turma{
+  display:inline-block;
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:12.5px;
+  color:var(--azul-noite);
+  background:#EEF2FB;
+  padding:3px 10px;
+  border-radius:8px;
+  margin-bottom:10px;
+}
+.cartao-turma .total-alunos{
+  font-weight:700;
+  font-size:13.5px;
+  color:#3B5590;
+}
+.aviso-turmas-vazio{
+  text-align:center;
+  font-weight:700;
+  color:#5C6D95;
+  padding:30px 20px;
+}
+
+/* ===================== ÁREA DO PROFESSOR: DASHBOARD DE DESEMPENHO ===================== */
+.tabela-desempenho-wrap{
+  max-width:900px;
+  margin:20px auto 40px;
+  padding:0 5vw;
+  overflow-x:auto;
+}
+.tabela-desempenho{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  background:var(--branco);
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 8px 0 rgba(18,40,92,0.12);
+  font-family:var(--font-body);
+}
+.tabela-desempenho thead th{
+  background:var(--azul-noite);
+  color:var(--branco);
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:13px;
+  text-align:left;
+  padding:14px 16px;
+}
+.tabela-desempenho tbody td{
+  padding:13px 16px;
+  font-weight:700;
+  font-size:14.5px;
+  color:#2B3A5C;
+  border-bottom:1px solid #EEF2FB;
+}
+.tabela-desempenho tbody tr:last-child td{border-bottom:none;}
+.tabela-desempenho tbody tr:nth-child(even){background:#FAFBFF;}
+
+.barra-progresso-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:160px;
+}
+.barra-progresso{
+  flex:1;
+  height:10px;
+  border-radius:6px;
+  background:#EEF2FB;
+  overflow:hidden;
+}
+.barra-progresso-preenchida{
+  height:100%;
+  background:var(--verde);
+  border-radius:6px;
+  transition:width .3s ease;
+}
+.barra-progresso-texto{
+  font-size:12.5px;
+  font-weight:700;
+  color:#5C6D95;
+  white-space:nowrap;
+}
+.aviso-vazio{
+  text-align:center;
+  font-weight:700;
+  color:#5C6D95;
+  padding:30px 20px;
 }

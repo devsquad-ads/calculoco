@@ -10,16 +10,24 @@ Jogo educativo web para crianças praticarem as quatro operações básicas de m
 
 ## Como funciona o fluxo
 
-1. O **professor** cadastra uma turma (pela seção "Sou professor(a)" na tela inicial) e recebe um **código de 4 dígitos**.
-2. O **aluno** digita esse código para entrar na turma.
-3. Dentro da turma, o aluno **cria uma conta** (nome de usuário + PIN de 4 dígitos) ou **faz login** se já tiver uma.
-4. No menu, o aluno vê as fases: a **Fase 1 (Adição)** já está jogável, com perguntas geradas aleatoriamente e 4 alternativas de múltipla escolha. As fases seguintes ficam **bloqueadas até a anterior ser concluída**.
-5. Tudo — turmas, contas e progresso — fica salvo no **Supabase**.
+### Aluno
+1. O aluno digita o **código da turma** (4 dígitos, fornecido pelo professor).
+2. Dentro da turma, cria uma conta (nome de usuário + PIN de 4 dígitos) ou faz login se já tiver uma.
+3. No menu, vê **4 módulos** (Adição, Subtração, Multiplicação, Divisão), cada um com **5 níveis** de dificuldade crescente — 20 fases no total. Cada nível só desbloqueia depois que o anterior é concluído.
+4. Cada pergunta é gerada aleatoriamente, com um cenário temático (mercado, escola, fazenda, festa, aquário, parque, praia, casa) que muda o visual da tela.
+
+### Professor
+1. Na tela inicial, o professor toca em **"Sou professor(a)"** e cria uma conta própria (usuário + senha) ou faz login.
+2. Ao entrar, vê a lista de **turmas que ele mesmo criou**, com um formulário para criar novas turmas (cada uma recebe um código de 4 dígitos gerado automaticamente).
+3. Ao clicar em uma turma, vê um **dashboard de desempenho**: para cada aluno, quantas fases já foram concluídas (de 20), total de acertos/erros e o percentual de acerto.
+
+Tudo — professores, turmas, contas de aluno e progresso — fica salvo no **Supabase**. Cada professor só enxerga as turmas que ele próprio criou (o backend valida isso a cada requisição do dashboard).
 
 ## 1. Configurar o Supabase
 
 1. Crie um projeto em [supabase.com](https://supabase.com).
-2. Vá em **SQL Editor** e rode o conteúdo de `database/schema.sql`. Isso cria as tabelas `turmas`, `alunos` e `progresso`.
+2. Vá em **SQL Editor** e rode o conteúdo de `database/schema.sql`. Isso cria as tabelas `professores`, `turmas`, `alunos` e `progresso`.
+   - Se você já tinha um banco de uma versão anterior (sem a tabela `professores`), pode rodar o script de novo sem medo: todos os `create table`/`add column` usam `if not exists`, então só o que falta é adicionado, sem apagar dados existentes.
 3. Em **Project Settings → API**, copie:
    - `Project URL` → vai em `SUPABASE_URL`
    - `service_role key` (não a `anon key`!) → vai em `SUPABASE_SERVICE_KEY`
@@ -43,32 +51,44 @@ O servidor sobe em `http://localhost:3000` e **também serve o frontend** (pasta
 ```
 calculoco/
 ├── frontend/
-│   ├── index.html      # telas: turma → login/cadastro → menu → jogo
+│   ├── index.html      # telas: turma → login/cadastro do aluno → menu → jogo
+│   │                    #        + login/cadastro do professor → minhas turmas → dashboard
 │   ├── style.css        # identidade visual (cores, fontes, componentes)
-│   └── app.js            # lógica ES6: fetch na API, navegação, estado do jogo
+│   └── app.js            # lógica ES6: fetch na API, navegação, estado do jogo e da área do professor
 ├── backend/
 │   ├── server.js               # servidor Express
 │   ├── supabaseClient.js       # conexão com o Supabase
 │   ├── routes/
-│   │   ├── turmas.js           # criar turma / validar código
+│   │   ├── turmas.js           # criar turma, validar código, dashboard de desempenho da turma
 │   │   ├── auth.js             # cadastro e login do aluno (usuário + PIN)
+│   │   ├── professores.js      # cadastro e login do professor (usuário + senha), lista de turmas
 │   │   ├── progresso.js        # ler/gravar progresso por fase
 │   │   └── fases.js            # gerar pergunta aleatória e verificar resposta
 │   ├── utils/
-│   │   ├── perguntas.js        # gerador de perguntas de adição com números aleatórios
+│   │   ├── perguntas.js        # gerador de perguntas dos 4 módulos, com dificuldade progressiva
 │   │   └── token.js            # assina/valida a resposta correta sem expor no HTML
 │   ├── package.json
 │   └── .env.example
 └── database/
-    └── schema.sql        # tabelas turmas / alunos / progresso
+    └── schema.sql        # tabelas professores / turmas / alunos / progresso
 ```
 
 ## 4. Segurança das perguntas
 
 A resposta correta **nunca** é enviada em texto aberto para o navegador. O backend assina um token (HMAC-SHA256, com validade de 5 minutos) contendo o índice da alternativa correta. O frontend devolve esse token junto com a resposta escolhida, e o backend confirma o acerto comparando a assinatura — assim não dá para "ver a resposta certa" só inspecionando a resposta da API.
 
-## 5. Próximos passos sugeridos
+## 5. Endpoints da área do professor
 
-- Implementar os geradores de pergunta das fases 2 (subtração), 3 (multiplicação) e 4 (divisão) em `backend/utils/perguntas.js`, seguindo o mesmo padrão da fase 1.
-- Adicionar uma tela de relatório de desempenho para o professor (consultando a tabela `progresso` agrupada por turma).
+| Rota | Descrição |
+|---|---|
+| `POST /api/professores/cadastro` | Cria uma conta de professor `{ nome, usuario, senha }` |
+| `POST /api/professores/login` | Login do professor `{ usuario, senha }` |
+| `GET /api/professores/:professor_id/turmas` | Lista as turmas criadas por esse professor, com contagem de alunos |
+| `POST /api/turmas` | Cria uma turma `{ nome_turma, professor_id }` (exige professor autenticado) |
+| `GET /api/turmas/:turma_id/desempenho?professor_id=...` | Dashboard: progresso de cada aluno da turma (só o professor dono da turma pode acessar) |
+
+## 6. Próximos passos sugeridos
+
+- Adicionar recuperação de senha do professor.
+- Expandir o dashboard com um detalhamento por módulo (não só o total de fases concluídas).
 - Hospedar o backend em um serviço gratuito (Render, Railway, Fly.io) e apontar as variáveis de ambiente do Supabase por lá.

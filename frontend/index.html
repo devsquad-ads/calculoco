@@ -28,15 +28,94 @@
     </form>
     <p class="aviso" id="aviso-turma"></p>
 
-    <details class="area-professor">
-      <summary>Sou professor(a) e quero cadastrar uma turma</summary>
-      <form id="form-nova-turma">
-        <input type="text" id="campo-nome-turma" placeholder="Nome da turma (ex: 3º Ano B)" required>
-        <input type="text" id="campo-nome-professor" placeholder="Seu nome" required>
-        <button type="submit" class="btn-grande btn-linha-cheia">Criar turma</button>
-      </form>
-      <p class="aviso" id="aviso-nova-turma"></p>
-    </details>
+    <button type="button" class="btn-linha btn-ir-professor" id="btn-ir-professor">👩‍🏫 Sou professor(a)</button>
+  </div>
+</section>
+
+<!-- ===================== TELA PROFESSOR 1: LOGIN / CADASTRO ===================== -->
+<section class="tela" id="tela-professor-auth">
+  <div class="cartao-login">
+    <img class="logo-login" src="calculoco-logo.jpeg" alt="Logo Calculoco" onerror="this.style.display='none'">
+    <h1>Área do professor</h1>
+    <p class="sub">Gerencie suas turmas e acompanhe o desempenho dos alunos</p>
+
+    <div class="abas">
+      <button type="button" class="aba ativa" id="prof-aba-entrar" data-aba="entrar">Entrar</button>
+      <button type="button" class="aba" id="prof-aba-criar" data-aba="criar">Criar conta</button>
+    </div>
+
+    <form id="form-professor-auth">
+      <label class="sr-only" for="prof-campo-nome">Seu nome</label>
+      <input type="text" id="prof-campo-nome" class="oculto" placeholder="Seu nome completo" autocomplete="off">
+
+      <label class="sr-only" for="prof-campo-usuario">Usuário</label>
+      <input type="text" id="prof-campo-usuario" placeholder="Usuário" autocomplete="off" required>
+
+      <label class="sr-only" for="prof-campo-senha">Senha</label>
+      <input type="password" id="prof-campo-senha" placeholder="Senha" autocomplete="off" required>
+
+      <button type="submit" class="btn-grande btn-linha-cheia" id="prof-btn-confirmar">Entrar</button>
+    </form>
+    <p class="aviso" id="prof-aviso-auth"></p>
+    <button type="button" class="btn-linha" id="btn-voltar-tela-turma">← Voltar</button>
+  </div>
+</section>
+
+<!-- ===================== TELA PROFESSOR 2: MINHAS TURMAS ===================== -->
+<section class="tela" id="tela-professor-turmas">
+  <header class="topo">
+    <div class="marca">
+      <img src="calculoco-logo.jpeg" alt="Logo Calculoco" onerror="this.style.display='none'">
+      <div>
+        <div class="titulo">Calculoco</div>
+        <div class="sub-topo" id="prof-saudacao">Olá! 👋</div>
+      </div>
+    </div>
+    <button class="btn-linha" id="prof-btn-sair">Sair</button>
+  </header>
+
+  <div class="faixa">
+    <h1>Minhas turmas</h1>
+    <p>Clique em uma turma para ver o desempenho dos alunos</p>
+  </div>
+
+  <div class="area-nova-turma">
+    <form id="form-nova-turma">
+      <input type="text" id="campo-nome-turma" placeholder="Nome da nova turma (ex: 3º Ano B)" required>
+      <button type="submit" class="btn-grande btn-laranja">+ Criar turma</button>
+    </form>
+    <p class="aviso" id="aviso-nova-turma"></p>
+  </div>
+
+  <div class="lista-turmas" id="lista-turmas"></div>
+</section>
+
+<!-- ===================== TELA PROFESSOR 3: DASHBOARD DA TURMA ===================== -->
+<section class="tela" id="tela-professor-dashboard">
+  <header class="topo">
+    <button class="btn-linha" id="btn-voltar-turmas">← Minhas turmas</button>
+    <span class="pill-fase" id="dash-codigo-turma">Código: ----</span>
+  </header>
+
+  <div class="faixa">
+    <h1 id="dash-nome-turma">Turma</h1>
+    <p>Desempenho dos alunos nos 20 níveis do jogo</p>
+  </div>
+
+  <div class="tabela-desempenho-wrap">
+    <table class="tabela-desempenho" id="tabela-desempenho">
+      <thead>
+        <tr>
+          <th>Aluno</th>
+          <th>Progresso</th>
+          <th>Acertos</th>
+          <th>Erros</th>
+          <th>% de acerto</th>
+        </tr>
+      </thead>
+      <tbody id="corpo-tabela-desempenho"></tbody>
+    </table>
+    <p class="aviso-vazio oculto" id="dash-vazio">Ainda não há alunos cadastrados nesta turma.</p>
   </div>
 </section>
 

@@ -2,6 +2,7 @@
 
 const API_URL = "/api";
 const CHAVE_ALUNO = "calculoco_aluno";
+const CHAVE_PROFESSOR = "calculoco_professor";
 
 // Os 4 módulos do jogo (1 para cada operação). Cada módulo tem 5 níveis
 // de dificuldade crescente (fase_numero global = (modulo-1)*5 + nivel).
@@ -29,6 +30,8 @@ const estado = {
   turma: null, // { id, codigo, nome_turma, nome_professor }
   aluno: null, // { id, nome_usuario, turma_id }
   progresso: [], // [{ fase_numero, concluida, acertos, erros }]
+  professor: null, // { id, usuario, nome }
+  turmasProfessor: [], // [{ id, codigo, nome_turma, total_alunos, criado_em }]
   fase: {
     numero: null,
     modulo: null,
@@ -99,24 +102,9 @@ formTurma.addEventListener("submit", async (e) => {
 const formNovaTurma = document.getElementById("form-nova-turma");
 const avisoNovaTurma = document.getElementById("aviso-nova-turma");
 
-formNovaTurma.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  avisoNovaTurma.textContent = "";
-  const nome_turma = document.getElementById("campo-nome-turma").value.trim();
-  const nome_professor = document.getElementById("campo-nome-professor").value.trim();
-
-  try {
-    const turma = await chamarApi("/turmas", {
-      method: "POST",
-      body: JSON.stringify({ nome_turma, nome_professor }),
-    });
-    avisoNovaTurma.textContent = `Turma criada! Código: ${turma.codigo}`;
-    avisoNovaTurma.style.color = "var(--verde-escuro)";
-    formNovaTurma.reset();
-  } catch (erro) {
-    avisoNovaTurma.style.color = "var(--rosa)";
-    avisoNovaTurma.textContent = erro.message;
-  }
+document.getElementById("btn-ir-professor").addEventListener("click", () => {
+  prepararTelaProfessorAuth();
+  mostrarTela("tela-professor-auth");
 });
 
 /* ===================== TELA 2: LOGIN / CADASTRO ===================== */
@@ -197,6 +185,214 @@ document.getElementById("btn-sair").addEventListener("click", () => {
   campoCodigoTurma.value = "";
   mostrarTela("tela-turma");
 });
+
+/* ===================== ÁREA DO PROFESSOR ===================== */
+
+const tituloProfessorAuth = document.querySelector("#tela-professor-auth h1");
+const subProfessorAuth = document.querySelector("#tela-professor-auth .sub");
+const profAbaEntrar = document.getElementById("prof-aba-entrar");
+const profAbaCriar = document.getElementById("prof-aba-criar");
+const formProfessorAuth = document.getElementById("form-professor-auth");
+const profCampoNome = document.getElementById("prof-campo-nome");
+const profCampoUsuario = document.getElementById("prof-campo-usuario");
+const profCampoSenha = document.getElementById("prof-campo-senha");
+const profBtnConfirmar = document.getElementById("prof-btn-confirmar");
+const profAvisoAuth = document.getElementById("prof-aviso-auth");
+
+let modoProfessorAuth = "entrar";
+
+function prepararTelaProfessorAuth() {
+  formProfessorAuth.reset();
+  profAvisoAuth.textContent = "";
+  definirModoProfessorAuth("entrar");
+}
+
+function definirModoProfessorAuth(modo) {
+  modoProfessorAuth = modo;
+  profAbaEntrar.classList.toggle("ativa", modo === "entrar");
+  profAbaCriar.classList.toggle("ativa", modo === "criar");
+  profCampoNome.classList.toggle("oculto", modo !== "criar");
+  profBtnConfirmar.textContent = modo === "entrar" ? "Entrar" : "Criar minha conta";
+  profAvisoAuth.textContent = "";
+}
+
+profAbaEntrar.addEventListener("click", () => definirModoProfessorAuth("entrar"));
+profAbaCriar.addEventListener("click", () => definirModoProfessorAuth("criar"));
+
+document.getElementById("btn-voltar-tela-turma").addEventListener("click", () => {
+  mostrarTela("tela-turma");
+});
+
+formProfessorAuth.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  profAvisoAuth.textContent = "";
+
+  const usuario = profCampoUsuario.value.trim();
+  const senha = profCampoSenha.value;
+  const nome = profCampoNome.value.trim();
+
+  if (modoProfessorAuth === "criar" && !nome) {
+    profAvisoAuth.textContent = "Informe seu nome completo.";
+    return;
+  }
+
+  const caminho = modoProfessorAuth === "entrar" ? "/professores/login" : "/professores/cadastro";
+  const corpo =
+    modoProfessorAuth === "entrar" ? { usuario, senha } : { usuario, senha, nome };
+
+  try {
+    const resultado = await chamarApi(caminho, {
+      method: "POST",
+      body: JSON.stringify(corpo),
+    });
+    definirProfessorLogado(resultado.professor);
+    await entrarAreaProfessor();
+  } catch (erro) {
+    profAvisoAuth.textContent = erro.message;
+  }
+});
+
+function definirProfessorLogado(professor) {
+  estado.professor = professor;
+  localStorage.setItem(CHAVE_PROFESSOR, JSON.stringify(professor));
+}
+
+document.getElementById("prof-btn-sair").addEventListener("click", () => {
+  localStorage.removeItem(CHAVE_PROFESSOR);
+  estado.professor = null;
+  estado.turmasProfessor = [];
+  mostrarTela("tela-turma");
+});
+
+const profSaudacao = document.getElementById("prof-saudacao");
+const listaTurmas = document.getElementById("lista-turmas");
+
+async function entrarAreaProfessor() {
+  profSaudacao.textContent = `Olá, ${estado.professor.nome}! 👋`;
+  avisoNovaTurma.textContent = "";
+  formNovaTurma.reset();
+  await carregarTurmasProfessor();
+  renderizarListaTurmas();
+  mostrarTela("tela-professor-turmas");
+}
+
+async function carregarTurmasProfessor() {
+  try {
+    const resultado = await chamarApi(`/professores/${estado.professor.id}/turmas`);
+    estado.turmasProfessor = resultado.turmas || [];
+  } catch {
+    estado.turmasProfessor = [];
+  }
+}
+
+function renderizarListaTurmas() {
+  listaTurmas.innerHTML = "";
+
+  if (estado.turmasProfessor.length === 0) {
+    listaTurmas.innerHTML =
+      '<p class="aviso-turmas-vazio">Você ainda não criou nenhuma turma. Use o formulário acima para criar a primeira!</p>';
+    return;
+  }
+
+  estado.turmasProfessor.forEach((turma) => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "cartao-turma";
+    card.innerHTML = `
+      <div class="nome-turma">${turma.nome_turma}</div>
+      <span class="codigo-turma">Código: ${turma.codigo}</span>
+      <div class="total-alunos">${turma.total_alunos} aluno${turma.total_alunos === 1 ? "" : "s"}</div>
+    `;
+    card.addEventListener("click", () => abrirDashboardTurma(turma));
+    listaTurmas.appendChild(card);
+  });
+}
+
+formNovaTurma.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  avisoNovaTurma.textContent = "";
+  const nome_turma = document.getElementById("campo-nome-turma").value.trim();
+
+  try {
+    const turma = await chamarApi("/turmas", {
+      method: "POST",
+      body: JSON.stringify({ nome_turma, professor_id: estado.professor.id }),
+    });
+    avisoNovaTurma.style.color = "var(--verde-escuro)";
+    avisoNovaTurma.textContent = `Turma criada! Código: ${turma.codigo}`;
+    formNovaTurma.reset();
+    await carregarTurmasProfessor();
+    renderizarListaTurmas();
+  } catch (erro) {
+    avisoNovaTurma.style.color = "var(--rosa)";
+    avisoNovaTurma.textContent = erro.message;
+  }
+});
+
+document.getElementById("btn-voltar-turmas").addEventListener("click", async () => {
+  await carregarTurmasProfessor();
+  renderizarListaTurmas();
+  mostrarTela("tela-professor-turmas");
+});
+
+const dashNomeTurma = document.getElementById("dash-nome-turma");
+const dashCodigoTurma = document.getElementById("dash-codigo-turma");
+const corpoTabelaDesempenho = document.getElementById("corpo-tabela-desempenho");
+const tabelaDesempenho = document.getElementById("tabela-desempenho");
+const dashVazio = document.getElementById("dash-vazio");
+
+async function abrirDashboardTurma(turma) {
+  dashNomeTurma.textContent = turma.nome_turma;
+  dashCodigoTurma.textContent = `Código: ${turma.codigo}`;
+  corpoTabelaDesempenho.innerHTML = "";
+  tabelaDesempenho.classList.remove("oculto");
+  dashVazio.classList.add("oculto");
+  mostrarTela("tela-professor-dashboard");
+
+  try {
+    const resultado = await chamarApi(
+      `/turmas/${turma.id}/desempenho?professor_id=${estado.professor.id}`
+    );
+    renderizarDesempenho(resultado.alunos || []);
+  } catch (erro) {
+    tabelaDesempenho.classList.add("oculto");
+    dashVazio.classList.remove("oculto");
+    dashVazio.textContent = erro.message;
+  }
+}
+
+function renderizarDesempenho(alunos) {
+  if (alunos.length === 0) {
+    tabelaDesempenho.classList.add("oculto");
+    dashVazio.classList.remove("oculto");
+    dashVazio.textContent = "Ainda não há alunos cadastrados nesta turma.";
+    return;
+  }
+
+  corpoTabelaDesempenho.innerHTML = alunos
+    .map((aluno) => {
+      const percentualProgresso = Math.round((aluno.fases_concluidas / aluno.total_fases) * 100);
+      const percentualAcerto = aluno.percentual_acerto === null ? "—" : `${aluno.percentual_acerto}%`;
+
+      return `
+        <tr>
+          <td>${aluno.nome_usuario}</td>
+          <td>
+            <div class="barra-progresso-wrap">
+              <div class="barra-progresso">
+                <div class="barra-progresso-preenchida" style="width:${percentualProgresso}%"></div>
+              </div>
+              <span class="barra-progresso-texto">${aluno.fases_concluidas}/${aluno.total_fases}</span>
+            </div>
+          </td>
+          <td>${aluno.acertos}</td>
+          <td>${aluno.erros}</td>
+          <td>${percentualAcerto}</td>
+        </tr>
+      `;
+    })
+    .join("");
+}
 
 /* ===================== TELA 3: MENU DE MÓDULOS E NÍVEIS ===================== */
 
@@ -423,20 +619,30 @@ btnContinuarJogo.addEventListener("click", async () => {
 /* ===================== INICIALIZAÇÃO ===================== */
 
 (async function iniciar() {
-  const salvo = localStorage.getItem(CHAVE_ALUNO);
-  if (!salvo) {
-    mostrarTela("tela-turma");
-    return;
+  const alunoSalvo = localStorage.getItem(CHAVE_ALUNO);
+  if (alunoSalvo) {
+    try {
+      const aluno = JSON.parse(alunoSalvo);
+      const turma = await chamarApi(`/turmas/${aluno.turma_codigo}`);
+      estado.turma = turma;
+      estado.aluno = { id: aluno.id, nome_usuario: aluno.nome_usuario, turma_id: aluno.turma_id };
+      await entrarNoMenu();
+      return;
+    } catch {
+      localStorage.removeItem(CHAVE_ALUNO);
+    }
   }
 
-  try {
-    const aluno = JSON.parse(salvo);
-    const turma = await chamarApi(`/turmas/${aluno.turma_codigo}`);
-    estado.turma = turma;
-    estado.aluno = { id: aluno.id, nome_usuario: aluno.nome_usuario, turma_id: aluno.turma_id };
-    await entrarNoMenu();
-  } catch {
-    localStorage.removeItem(CHAVE_ALUNO);
-    mostrarTela("tela-turma");
+  const professorSalvo = localStorage.getItem(CHAVE_PROFESSOR);
+  if (professorSalvo) {
+    try {
+      estado.professor = JSON.parse(professorSalvo);
+      await entrarAreaProfessor();
+      return;
+    } catch {
+      localStorage.removeItem(CHAVE_PROFESSOR);
+    }
   }
+
+  mostrarTela("tela-turma");
 })();

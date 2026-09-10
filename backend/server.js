@@ -7,6 +7,7 @@ const turmasRouter = require("./routes/turmas");
 const authRouter = require("./routes/auth");
 const progressoRouter = require("./routes/progresso");
 const fasesRouter = require("./routes/fases");
+const professoresRouter = require("./routes/professores");
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use("/api/turmas", turmasRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/progresso", progressoRouter);
 app.use("/api/fases", fasesRouter);
+app.use("/api/professores", professoresRouter);
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
