@@ -52,7 +52,14 @@ router.post("/cadastro", async (req, res) => {
     .select("id, nome_usuario, turma_id")
     .single();
 
-  if (error) return res.status(500).json({ erro: error.message });
+  if (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({
+        erro: "Esse nome de usuário já existe nesta turma. Escolha outro ou faça login.",
+      });
+    }
+    return res.status(500).json({ erro: error.message });
+  }
   res.status(201).json({ aluno });
 });
 

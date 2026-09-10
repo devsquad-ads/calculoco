@@ -44,7 +44,14 @@ router.post("/cadastro", async (req, res) => {
     .select("id, usuario, nome")
     .single();
 
-  if (error) return res.status(500).json({ erro: error.message });
+  if (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({
+        erro: "Esse usuário já está cadastrado. Faça login ou escolha outro usuário.",
+      });
+    }
+    return res.status(500).json({ erro: error.message });
+  }
   res.status(201).json({ professor });
 });
 
