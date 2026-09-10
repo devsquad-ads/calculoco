@@ -11,9 +11,10 @@ function gerarCodigo() {
 // Cadastro de turma. Exige um professor autenticado (professor_id vem do
 // login em /api/professores/login ou /cadastro). Gera um código único de 4 dígitos.
 router.post("/", async (req, res) => {
-  const { nome_turma, professor_id } = req.body;
+  const { professor_id } = req.body;
+  const nomeTurmaLimpo = String(req.body.nome_turma || "").trim();
 
-  if (!nome_turma || !professor_id) {
+  if (!nomeTurmaLimpo || !professor_id) {
     return res
       .status(400)
       .json({ erro: "Informe o nome da turma e faça login como professor." });
@@ -53,7 +54,7 @@ router.post("/", async (req, res) => {
 
   const { data, error } = await supabase
     .from("turmas")
-    .insert({ codigo, nome_turma, nome_professor: professor.nome, professor_id })
+    .insert({ codigo, nome_turma: nomeTurmaLimpo, nome_professor: professor.nome, professor_id })
     .select()
     .single();
 
