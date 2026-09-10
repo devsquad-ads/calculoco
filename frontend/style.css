@@ -33,6 +33,19 @@ body{
 }
 .oculto{display:none !important;}
 
+/* ===================== ÍCONES ===================== */
+.icone-inline{
+  width:18px;height:18px;
+  flex-shrink:0;
+  vertical-align:-4px;
+}
+.btn-linha-icone{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+
 .sun{
   position:fixed;
   top:26px; right:8%;
@@ -78,8 +91,9 @@ body{
   box-shadow:0 20px 40px rgba(18,40,92,0.25);
 }
 .logo-login{
-  width:96px;height:96px;object-fit:contain;
-  margin-bottom:6px;
+  display:block;
+  width:88px;height:88px;
+  margin:0 auto 10px;
   filter:drop-shadow(0 4px 0 rgba(18,40,92,0.15));
 }
 .cartao-login h1{
@@ -194,8 +208,9 @@ body{
   flex-wrap:wrap;
 }
 .marca{display:flex; align-items:center; gap:14px;}
-.marca img{
-  width:60px;height:60px;object-fit:contain;
+.marca-logo{
+  width:52px;height:52px;
+  flex-shrink:0;
   filter:drop-shadow(0 4px 0 rgba(18,40,92,0.15));
 }
 .marca .titulo{
@@ -258,12 +273,16 @@ body{
   width:56px;height:56px;
   border-radius:50%;
   display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display);
+  font-weight:800;
   font-size:26px;
+  color:var(--azul-noite);
   flex-shrink:0;
   background:var(--cor-modulo, var(--amarelo));
   border:4px solid var(--branco);
   box-shadow:0 4px 0 rgba(18,40,92,0.3);
 }
+.bolha-modulo svg{width:26px;height:26px;}
 .nome-modulo{
   font-family:var(--font-display);
   font-weight:800;
@@ -286,6 +305,7 @@ body{
   border-radius:14px;
   border:3px solid #DCE6F7;
   background:#EEF2FB;
+  display:flex; align-items:center; justify-content:center;
   font-family:var(--font-display);
   font-weight:800;
   font-size:17px;
@@ -293,6 +313,7 @@ body{
   cursor:pointer;
   transition:transform .12s ease, border-color .15s ease, background .15s ease;
 }
+.nivel-btn svg{width:19px;height:19px;}
 .nivel-btn:hover:not(:disabled){transform:translateY(-3px); border-color:var(--azul-ceu);}
 .nivel-btn:active:not(:disabled){transform:translateY(1px);}
 .nivel-btn:focus-visible{outline:3px solid var(--azul-noite); outline-offset:2px;}
@@ -330,14 +351,14 @@ body{
 }
 .cenario-decor .decor{
   position:absolute;
-  font-size:42px;
-  opacity:0.35;
-  filter:drop-shadow(0 4px 0 rgba(18,40,92,0.08));
+  width:56px;height:56px;
+  color:var(--azul-noite);
+  opacity:0.14;
 }
 .decor-1{top:4%; left:5%; transform:rotate(-8deg);}
-.decor-2{top:10%; right:6%; transform:rotate(10deg); font-size:34px;}
-.decor-3{bottom:12%; left:8%; transform:rotate(6deg); font-size:38px;}
-.decor-4{bottom:6%; right:8%; transform:rotate(-10deg); font-size:44px;}
+.decor-2{top:10%; right:6%; transform:rotate(10deg); width:44px;height:44px;}
+.decor-3{bottom:12%; left:8%; transform:rotate(6deg); width:50px;height:50px;}
+.decor-4{bottom:6%; right:8%; transform:rotate(-10deg); width:60px;height:60px;}
 
 .linha-mascote{
   position:relative;
@@ -353,10 +374,10 @@ body{
   border-radius:50%;
   background:var(--branco);
   display:flex; align-items:center; justify-content:center;
-  font-size:34px;
   border:3px solid var(--amarelo);
   box-shadow:0 5px 0 rgba(18,40,92,0.2);
 }
+.mascote svg{width:56px;height:56px;}
 .balao-fala{
   position:relative;
   flex:1;
@@ -482,7 +503,8 @@ footer{
   .opcoes{grid-template-columns:1fr 1fr;}
   .btn-opcao{font-size:19px; padding:16px 8px;}
   .linha-mascote{gap:8px;}
-  .mascote{width:52px; height:52px; font-size:28px;}
+  .mascote{width:52px; height:52px;}
+  .mascote svg{width:44px; height:44px;}
 }
 
 /* ===================== ÁREA DO PROFESSOR: MINHAS TURMAS ===================== */

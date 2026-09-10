@@ -7,24 +7,19 @@ const CHAVE_PROFESSOR = "calculoco_professor";
 // Os 4 módulos do jogo (1 para cada operação). Cada módulo tem 5 níveis
 // de dificuldade crescente (fase_numero global = (modulo-1)*5 + nivel).
 const MODULOS = [
-  { numero: 1, titulo: "Ilha da Adição", icone: "➕", cor: "var(--amarelo)", operacao: "Adição" },
-  { numero: 2, titulo: "Mercado da Subtração", icone: "➖", cor: "var(--rosa)", operacao: "Subtração" },
-  { numero: 3, titulo: "Selva da Multiplicação", icone: "✖️", cor: "var(--verde)", operacao: "Multiplicação" },
-  { numero: 4, titulo: "Vale da Divisão", icone: "➗", cor: "var(--azul-ceu)", operacao: "Divisão" },
+  { numero: 1, titulo: "Ilha da Adição", icone: "+", cor: "var(--amarelo)", operacao: "Adição" },
+  { numero: 2, titulo: "Mercado da Subtração", icone: "−", cor: "var(--rosa)", operacao: "Subtração" },
+  { numero: 3, titulo: "Selva da Multiplicação", icone: "×", cor: "var(--verde)", operacao: "Multiplicação" },
+  { numero: 4, titulo: "Vale da Divisão", icone: "÷", cor: "var(--azul-ceu)", operacao: "Divisão" },
 ];
 
-// Emojis de cenário usados como decoração de fundo, escolhidos de acordo
-// com o "contexto" que o backend devolve junto com cada pergunta.
-const CENARIOS = {
-  casa: ["🏠", "🛋️", "🪴", "🖼️"],
-  fazenda: ["🚜", "🐔", "🌾", "🐷"],
-  escola: ["📚", "✏️", "🎒", "🖍️"],
-  festa: ["🎈", "🎉", "🎂", "🎊"],
-  mercado: ["🛒", "🍎", "🍌", "🧺"],
-  aquario: ["🐠", "🐟", "🫧", "🪸"],
-  parque: ["🌳", "⚽", "🌼", "🦋"],
-  praia: ["🏖️", "🌊", "🐚", "☀️"],
-};
+// Contextos de cenário reconhecidos: cada um tem um ícone de linha próprio
+// (definido em index.html, símbolo "icone-<contexto>") usado como decoração
+// de fundo na tela de jogo, escolhido conforme o "contexto" que o backend
+// devolve junto com cada pergunta.
+const CONTEXTOS_VALIDOS = [
+  "casa", "fazenda", "escola", "festa", "mercado", "aquario", "parque", "praia",
+];
 
 const estado = {
   turma: null, // { id, codigo, nome_turma, nome_professor }
@@ -133,7 +128,7 @@ function definirModoAuth(modo) {
   modoAuth = modo;
   abaEntrar.classList.toggle("ativa", modo === "entrar");
   abaCriar.classList.toggle("ativa", modo === "criar");
-  btnConfirmarAuth.textContent = modo === "entrar" ? "🐒 Entrar" : "🐒 Criar minha conta";
+  btnConfirmarAuth.textContent = modo === "entrar" ? "Entrar" : "Criar minha conta";
   avisoAuth.textContent = "";
 }
 
@@ -268,7 +263,7 @@ const profSaudacao = document.getElementById("prof-saudacao");
 const listaTurmas = document.getElementById("lista-turmas");
 
 async function entrarAreaProfessor() {
-  profSaudacao.textContent = `Olá, ${estado.professor.nome}! 👋`;
+  profSaudacao.textContent = `Olá, ${estado.professor.nome}!`;
   avisoNovaTurma.textContent = "";
   formNovaTurma.reset();
   await carregarTurmasProfessor();
@@ -400,7 +395,7 @@ const saudacao = document.getElementById("saudacao");
 const gradeFases = document.getElementById("grade-fases");
 
 async function entrarNoMenu() {
-  saudacao.textContent = `Olá, ${estado.aluno.nome_usuario}! 👋`;
+  saudacao.textContent = `Olá, ${estado.aluno.nome_usuario}!`;
   await carregarProgresso();
   renderizarGradeFases();
   mostrarTela("tela-menu");
@@ -444,16 +439,24 @@ function renderizarGradeFases() {
         let classe = "nivel-btn";
         if (!desbloqueada) classe += " bloqueado";
         else if (concluida) classe += " concluido";
-        const conteudo = !desbloqueada ? "🔒" : concluida ? "✅" : nivel;
+        const conteudo = !desbloqueada
+          ? '<svg class="icone-inline"><use href="#icone-lock"></use></svg>'
+          : concluida
+          ? '<svg class="icone-inline"><use href="#icone-check"></use></svg>'
+          : nivel;
         return `<button type="button" class="${classe}" data-fase="${fase}" ${
           !desbloqueada ? "disabled" : ""
         } aria-label="Nível ${nivel}">${conteudo}</button>`;
       })
       .join("");
 
+    const iconeModulo = moduloDesbloqueado
+      ? modulo.icone
+      : '<svg class="icone-inline"><use href="#icone-lock"></use></svg>';
+
     cartao.innerHTML = `
       <div class="cabecalho-modulo">
-        <span class="bolha-modulo">${moduloDesbloqueado ? modulo.icone : "🔒"}</span>
+        <span class="bolha-modulo">${iconeModulo}</span>
         <div>
           <div class="nome-modulo">${modulo.titulo}</div>
           <div class="operacao-modulo">${modulo.operacao}</div>
@@ -465,7 +468,7 @@ function renderizarGradeFases() {
     cartao.querySelectorAll(".nivel-btn").forEach((botao) => {
       botao.addEventListener("click", () => {
         if (botao.disabled) {
-          mostrarToast("Complete o nível anterior para desbloquear este 🔓");
+          mostrarToast("Complete o nível anterior para desbloquear este nível.");
           return;
         }
         abrirFase(Number(botao.dataset.fase));
@@ -492,13 +495,17 @@ const btnContinuarJogo = document.getElementById("btn-continuar-jogo");
 const btnTentarNovamente = document.getElementById("btn-tentar-novamente");
 
 function aplicarCenario(contexto) {
+  const tema = CONTEXTOS_VALIDOS.includes(contexto) ? contexto : "casa";
+
   const temaAnterior = [...areaJogo.classList].find((c) => c.startsWith("tema-"));
   if (temaAnterior) areaJogo.classList.remove(temaAnterior);
-  areaJogo.classList.add(`tema-${contexto || "casa"}`);
+  areaJogo.classList.add(`tema-${tema}`);
 
-  const emojis = CENARIOS[contexto] || CENARIOS.casa;
-  cenarioDecor.innerHTML = emojis
-    .map((emoji, indice) => `<span class="decor decor-${indice + 1}">${emoji}</span>`)
+  cenarioDecor.innerHTML = [1, 2, 3, 4]
+    .map(
+      (indice) =>
+        `<svg class="decor decor-${indice}"><use href="#icone-${tema}"></use></svg>`
+    )
     .join("");
 }
 
@@ -571,14 +578,14 @@ async function responder(indiceEscolhido, botaoClicado) {
     botoes[resultado.correctIndex].classList.add("correta");
 
     if (resultado.correta) {
-      textoFeedback.textContent = "🎉 Muito bem, você acertou!";
+      textoFeedback.textContent = "Muito bem, você acertou!";
       textoFeedback.className = "feedback ok";
       estado.fase.acertosSessao += 1;
       await salvarProgressoFase(true);
       btnContinuarJogo.classList.remove("oculto");
     } else {
       botaoClicado.classList.add("errada");
-      textoFeedback.textContent = "😅 Não foi dessa vez, tente novamente!";
+      textoFeedback.textContent = "Não foi dessa vez, tente novamente.";
       textoFeedback.className = "feedback erro";
       estado.fase.errosSessao += 1;
       await salvarProgressoFase(false);

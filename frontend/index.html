@@ -11,31 +11,133 @@
 </head>
 <body>
 
+<!-- ===================== ÍCONES (emblema da marca + ícones de linha reutilizados via <use>) ===================== -->
+<svg class="sr-only" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="icone-logo" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="30" fill="var(--azul-noite)"></circle>
+      <circle cx="32" cy="32" r="30" fill="none" stroke="var(--amarelo)" stroke-width="3"></circle>
+      <circle cx="16" cy="21" r="7" fill="var(--laranja)"></circle>
+      <circle cx="48" cy="21" r="7" fill="var(--laranja)"></circle>
+      <circle cx="32" cy="31" r="17" fill="var(--amarelo)"></circle>
+      <ellipse cx="32" cy="36" rx="10" ry="8" fill="var(--branco)"></ellipse>
+      <circle cx="27" cy="29" r="2.1" fill="var(--azul-noite)"></circle>
+      <circle cx="37" cy="29" r="2.1" fill="var(--azul-noite)"></circle>
+      <path d="M26 38 Q32 43 38 38" fill="none" stroke="var(--azul-noite)" stroke-width="2.2" stroke-linecap="round"></path>
+    </symbol>
+
+    <symbol id="icone-professor" viewBox="0 0 24 24">
+      <path d="M12 3 2 8l10 5 10-5-10-5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+      <path d="M6 10.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="M21 9v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+    </symbol>
+
+    <symbol id="icone-lock" viewBox="0 0 24 24">
+      <rect x="5" y="11" width="14" height="9" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
+      <path d="M8 11V7a4 4 0 018 0v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+    </symbol>
+
+    <symbol id="icone-check" viewBox="0 0 24 24">
+      <path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+
+    <symbol id="icone-refresh" viewBox="0 0 24 24">
+      <path d="M20 11.5A8 8 0 106.3 17.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+      <path d="M20 6v5.5h-5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+
+    <symbol id="icone-seta" viewBox="0 0 24 24">
+      <path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      <path d="M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+
+    <symbol id="icone-voltar" viewBox="0 0 24 24">
+      <path d="M19 12H5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      <path d="M11 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+    </symbol>
+
+    <symbol id="icone-sair" viewBox="0 0 24 24">
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="M16 17l5-5-5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="M21 12H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+    </symbol>
+
+    <symbol id="icone-mais" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path>
+    </symbol>
+
+    <symbol id="icone-casa" viewBox="0 0 24 24">
+      <path d="M4 11L12 4l8 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="M6 10v9h5v-5h2v5h5v-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+    </symbol>
+
+    <symbol id="icone-escola" viewBox="0 0 24 24">
+      <path d="M4 5.5c3-1.8 6.3-1.8 8 0v14c-1.7-1.8-5-1.8-8 0v-14z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <path d="M20 5.5c-3-1.8-6.3-1.8-8 0v14c1.7-1.8 5-1.8 8 0v-14z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+    </symbol>
+
+    <symbol id="icone-mercado" viewBox="0 0 24 24">
+      <path d="M4 8h16l-1.6 10.2a2 2 0 01-2 1.8H7.6a2 2 0 01-2-1.8L4 8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <path d="M8 8V6.5a4 4 0 018 0V8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+    </symbol>
+
+    <symbol id="icone-fazenda" viewBox="0 0 24 24">
+      <path d="M12 21c-4.2-3-7-6.8-7-10.8A7 7 0 0112 3a7 7 0 017 7.2c0 4-2.8 7.8-7 10.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <path d="M12 21v-8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+    </symbol>
+
+    <symbol id="icone-festa" viewBox="0 0 24 24">
+      <circle cx="12" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.6"></circle>
+      <path d="M12 15l-1.2 3.2 1.2 1.3 1.2-1.3-1.2-3.2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+    </symbol>
+
+    <symbol id="icone-aquario" viewBox="0 0 24 24">
+      <path d="M3.5 12c1.6-2.6 4.4-4.5 8-4.5s6.4 1.9 8 4.5c-1.6 2.6-4.4 4.5-8 4.5s-6.4-1.9-8-4.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <path d="M19.5 12l3-2.2v4.4l-3-2.2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <circle cx="8.5" cy="11" r="0.9" fill="currentColor"></circle>
+    </symbol>
+
+    <symbol id="icone-parque" viewBox="0 0 24 24">
+      <path d="M12 3l4.5 6h-9L12 3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <path d="M12 8l5 6.5H7L12 8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <path d="M12 14.5V21" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+    </symbol>
+
+    <symbol id="icone-praia" viewBox="0 0 24 24">
+      <path d="M2 10.5c2-2.6 4-2.6 6 0s4 2.6 6 0 4-2.6 6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+      <path d="M2 16c2-2.6 4-2.6 6 0s4 2.6 6 0 4-2.6 6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+    </symbol>
+  </defs>
+</svg>
+
 <div class="sun" aria-hidden="true"></div>
 
 <!-- ===================== TELA 1: CÓDIGO DA TURMA ===================== -->
 <section class="tela ativa" id="tela-turma">
   <div class="cartao-login">
-    <img class="logo-login" src="calculoco-logo.jpeg" alt="Logo Calculoco" onerror="this.style.display='none'">
+    <svg class="logo-login" aria-hidden="true"><use href="#icone-logo"></use></svg>
     <h1>Bem-vindo ao Calculoco!</h1>
-    <p class="sub">PENSE · CALCULE · ACERTE · DIVIRTA-SE!</p>
+    <p class="sub">Pense · Calcule · Acerte · Divirta-se</p>
 
     <form id="form-turma">
       <label class="sr-only" for="campo-codigo-turma">Código da turma</label>
       <input type="text" id="campo-codigo-turma" placeholder="Código da turma (ex: 5638)"
              inputmode="numeric" maxlength="4" pattern="\d{4}" autocomplete="off" required>
-      <button type="submit" class="btn-grande btn-laranja" id="btn-entrar-turma">🐒 Entrar na turma</button>
+      <button type="submit" class="btn-grande btn-laranja" id="btn-entrar-turma">Entrar na turma</button>
     </form>
     <p class="aviso" id="aviso-turma"></p>
 
-    <button type="button" class="btn-linha btn-ir-professor" id="btn-ir-professor">👩‍🏫 Sou professor(a)</button>
+    <button type="button" class="btn-linha btn-linha-icone btn-ir-professor" id="btn-ir-professor">
+      <svg class="icone-inline" aria-hidden="true"><use href="#icone-professor"></use></svg>
+      Sou professor(a)
+    </button>
   </div>
 </section>
 
 <!-- ===================== TELA PROFESSOR 1: LOGIN / CADASTRO ===================== -->
 <section class="tela" id="tela-professor-auth">
   <div class="cartao-login">
-    <img class="logo-login" src="calculoco-logo.jpeg" alt="Logo Calculoco" onerror="this.style.display='none'">
+    <svg class="logo-login" aria-hidden="true"><use href="#icone-logo"></use></svg>
     <h1>Área do professor</h1>
     <p class="sub">Gerencie suas turmas e acompanhe o desempenho dos alunos</p>
 
@@ -57,7 +159,10 @@
       <button type="submit" class="btn-grande btn-linha-cheia" id="prof-btn-confirmar">Entrar</button>
     </form>
     <p class="aviso" id="prof-aviso-auth"></p>
-    <button type="button" class="btn-linha" id="btn-voltar-tela-turma">← Voltar</button>
+    <button type="button" class="btn-linha" id="btn-voltar-tela-turma">
+      <svg class="icone-inline" aria-hidden="true"><use href="#icone-voltar"></use></svg>
+      Voltar
+    </button>
   </div>
 </section>
 
@@ -65,13 +170,16 @@
 <section class="tela" id="tela-professor-turmas">
   <header class="topo">
     <div class="marca">
-      <img src="calculoco-logo.jpeg" alt="Logo Calculoco" onerror="this.style.display='none'">
+      <svg class="marca-logo" aria-hidden="true"><use href="#icone-logo"></use></svg>
       <div>
         <div class="titulo">Calculoco</div>
-        <div class="sub-topo" id="prof-saudacao">Olá! 👋</div>
+        <div class="sub-topo" id="prof-saudacao">Olá!</div>
       </div>
     </div>
-    <button class="btn-linha" id="prof-btn-sair">Sair</button>
+    <button class="btn-linha btn-linha-icone" id="prof-btn-sair">
+      <svg class="icone-inline" aria-hidden="true"><use href="#icone-sair"></use></svg>
+      Sair
+    </button>
   </header>
 
   <div class="faixa">
@@ -82,7 +190,10 @@
   <div class="area-nova-turma">
     <form id="form-nova-turma">
       <input type="text" id="campo-nome-turma" placeholder="Nome da nova turma (ex: 3º Ano B)" required>
-      <button type="submit" class="btn-grande btn-laranja">+ Criar turma</button>
+      <button type="submit" class="btn-grande btn-laranja btn-linha-icone">
+        <svg class="icone-inline" aria-hidden="true"><use href="#icone-mais"></use></svg>
+        Criar turma
+      </button>
     </form>
     <p class="aviso" id="aviso-nova-turma"></p>
   </div>
@@ -93,7 +204,10 @@
 <!-- ===================== TELA PROFESSOR 3: DASHBOARD DA TURMA ===================== -->
 <section class="tela" id="tela-professor-dashboard">
   <header class="topo">
-    <button class="btn-linha" id="btn-voltar-turmas">← Minhas turmas</button>
+    <button class="btn-linha btn-linha-icone" id="btn-voltar-turmas">
+      <svg class="icone-inline" aria-hidden="true"><use href="#icone-voltar"></use></svg>
+      Minhas turmas
+    </button>
     <span class="pill-fase" id="dash-codigo-turma">Código: ----</span>
   </header>
 
@@ -122,7 +236,7 @@
 <!-- ===================== TELA 2: LOGIN / CADASTRO DO ALUNO ===================== -->
 <section class="tela" id="tela-auth">
   <div class="cartao-login">
-    <img class="logo-login" src="calculoco-logo.jpeg" alt="Logo Calculoco" onerror="this.style.display='none'">
+    <svg class="logo-login" aria-hidden="true"><use href="#icone-logo"></use></svg>
     <h1 id="titulo-auth">Turma encontrada!</h1>
     <p class="sub" id="sub-auth">Agora entre com seu usuário</p>
 
@@ -139,10 +253,13 @@
       <input type="password" id="campo-pin" placeholder="PIN (4 números)"
              inputmode="numeric" maxlength="4" pattern="\d{4}" autocomplete="off" required>
 
-      <button type="submit" class="btn-grande btn-laranja" id="btn-confirmar-auth">🐒 Entrar</button>
+      <button type="submit" class="btn-grande btn-laranja" id="btn-confirmar-auth">Entrar</button>
     </form>
     <p class="aviso" id="aviso-auth"></p>
-    <button type="button" class="btn-linha" id="btn-trocar-turma">← Trocar de turma</button>
+    <button type="button" class="btn-linha btn-linha-icone" id="btn-trocar-turma">
+      <svg class="icone-inline" aria-hidden="true"><use href="#icone-voltar"></use></svg>
+      Trocar de turma
+    </button>
   </div>
 </section>
 
@@ -150,29 +267,35 @@
 <section class="tela" id="tela-menu">
   <header class="topo">
     <div class="marca">
-      <img src="calculoco-logo.jpeg" alt="Logo Calculoco" onerror="this.style.display='none'">
+      <svg class="marca-logo" aria-hidden="true"><use href="#icone-logo"></use></svg>
       <div>
         <div class="titulo">Calculoco</div>
-        <div class="sub-topo" id="saudacao">Olá! 👋</div>
+        <div class="sub-topo" id="saudacao">Olá!</div>
       </div>
     </div>
-    <button class="btn-linha" id="btn-sair">Sair</button>
+    <button class="btn-linha btn-linha-icone" id="btn-sair">
+      <svg class="icone-inline" aria-hidden="true"><use href="#icone-sair"></use></svg>
+      Sair
+    </button>
   </header>
 
   <div class="faixa">
     <h1>Escolha um módulo e um nível!</h1>
-    <p>Complete um nível para desbloquear o próximo 🔓</p>
+    <p>Complete um nível para desbloquear o próximo</p>
   </div>
 
   <div class="grade-fases" id="grade-fases"></div>
 
-  <footer>Calculoco &mdash; Aprender matemática nunca foi tão divertido 🐒</footer>
+  <footer>Calculoco &mdash; Aprender matemática nunca foi tão divertido</footer>
 </section>
 
 <!-- ===================== TELA 4: JOGO (PERGUNTA) ===================== -->
 <section class="tela" id="tela-jogo">
   <header class="topo">
-    <button class="btn-linha" id="btn-voltar-menu">← Voltar</button>
+    <button class="btn-linha btn-linha-icone" id="btn-voltar-menu">
+      <svg class="icone-inline" aria-hidden="true"><use href="#icone-voltar"></use></svg>
+      Voltar
+    </button>
     <span class="pill-fase" id="pill-fase">Adição · Nível 1 de 5</span>
   </header>
 
@@ -180,7 +303,7 @@
     <div class="cenario-decor" id="cenario-decor" aria-hidden="true"></div>
 
     <div class="linha-mascote">
-      <div class="mascote" aria-hidden="true">🐒</div>
+      <div class="mascote" aria-hidden="true"><svg><use href="#icone-logo"></use></svg></div>
       <div class="balao-fala">
         <p class="enunciado" id="texto-enunciado">Carregando pergunta...</p>
       </div>
@@ -189,8 +312,14 @@
     <div class="cartao-pergunta">
       <div class="opcoes" id="opcoes-resposta"></div>
       <p class="feedback" id="texto-feedback"></p>
-      <button class="cta-jogar oculto" id="btn-continuar-jogo">Continuar ▶</button>
-      <button class="cta-jogar oculto btn-tentar-de-novo" id="btn-tentar-novamente">Tentar novamente 🔁</button>
+      <button class="cta-jogar oculto btn-linha-icone" id="btn-continuar-jogo">
+        Continuar
+        <svg class="icone-inline" aria-hidden="true"><use href="#icone-seta"></use></svg>
+      </button>
+      <button class="cta-jogar oculto btn-tentar-de-novo btn-linha-icone" id="btn-tentar-novamente">
+        <svg class="icone-inline" aria-hidden="true"><use href="#icone-refresh"></use></svg>
+        Tentar novamente
+      </button>
     </div>
   </div>
 </section>
