@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const supabase = require("../supabaseClient");
+const { TOTAL_FASES } = require("../utils/perguntas");
 
 // GET /api/progresso/:aluno_id
 router.get("/:aluno_id", async (req, res) => {
@@ -22,6 +23,18 @@ router.post("/", async (req, res) => {
 
   if (!aluno_id || !fase_numero) {
     return res.status(400).json({ erro: "aluno_id e fase_numero são obrigatórios." });
+  }
+
+  if (!Number.isInteger(fase_numero) || fase_numero < 1 || fase_numero > TOTAL_FASES) {
+    return res.status(400).json({ erro: `fase_numero deve ser um número entre 1 e ${TOTAL_FASES}.` });
+  }
+
+  if (acertos !== undefined && (!Number.isInteger(acertos) || acertos < 0)) {
+    return res.status(400).json({ erro: "acertos deve ser um número inteiro maior ou igual a 0." });
+  }
+
+  if (erros !== undefined && (!Number.isInteger(erros) || erros < 0)) {
+    return res.status(400).json({ erro: "erros deve ser um número inteiro maior ou igual a 0." });
   }
 
   const { data, error } = await supabase
