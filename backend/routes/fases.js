@@ -1,15 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const { gerarQuestao } = require("../utils/perguntas");
+const { gerarQuestao, TOTAL_FASES, NIVEIS_POR_MODULO } = require("../utils/perguntas");
 const { assinarQuestao, verificarToken } = require("../utils/token");
 
-// 4 módulos (adição, subtração, multiplicação, divisão) x 5 níveis cada.
 // fase 1-5 = adição níveis 1-5, fase 6-10 = subtração níveis 1-5, etc.
-const TOTAL_FASES = 20;
-
 function decompoeFase(numero) {
-  const modulo = Math.ceil(numero / 5);
-  const nivel = numero - (modulo - 1) * 5;
+  const modulo = Math.ceil(numero / NIVEIS_POR_MODULO);
+  const nivel = numero - (modulo - 1) * NIVEIS_POR_MODULO;
   return { modulo, nivel };
 }
 

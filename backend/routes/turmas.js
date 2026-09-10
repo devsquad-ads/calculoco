@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const supabase = require("../supabaseClient");
+const { TOTAL_FASES } = require("../utils/perguntas");
 
 function gerarCodigo() {
   return String(Math.floor(1000 + Math.random() * 9000));
@@ -121,8 +122,6 @@ router.get("/:turma_id/desempenho", async (req, res) => {
       progressoPorAluno[linha.aluno_id].push(linha);
     });
   }
-
-  const TOTAL_FASES = 20;
 
   const desempenho = (alunos || []).map((aluno) => {
     const linhas = progressoPorAluno[aluno.id] || [];

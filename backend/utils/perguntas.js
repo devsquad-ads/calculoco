@@ -201,6 +201,11 @@ const GERADORES_POR_MODULO = {
   4: gerarDivisao,
 };
 
+// 4 módulos x 5 níveis cada = 20 fases jogáveis ao todo.
+const TOTAL_MODULOS = 4;
+const NIVEIS_POR_MODULO = 5;
+const TOTAL_FASES = TOTAL_MODULOS * NIVEIS_POR_MODULO;
+
 // modulo: 1 (adição) a 4 (divisão) · nivel: 1 a 5
 function gerarQuestao(modulo, nivel) {
   const gerador = GERADORES_POR_MODULO[modulo];
@@ -208,4 +213,4 @@ function gerarQuestao(modulo, nivel) {
   return gerador(nivel);
 }
 
-module.exports = { gerarQuestao };
+module.exports = { gerarQuestao, TOTAL_FASES, NIVEIS_POR_MODULO };
