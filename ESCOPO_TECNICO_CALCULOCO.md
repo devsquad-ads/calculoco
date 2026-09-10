@@ -183,10 +183,10 @@ Retorna `{ status: "ok" }` — usado só para checagem rápida de que o servidor
 O app é uma **SPA simples de uma página só**: todas as "telas" são `<section class="tela">` dentro do mesmo `index.html`, e `mostrarTela(id)` alterna qual fica visível (`classList` add/remove `"ativa"`), sem roteamento de URL nem histórico do navegador.
 
 ### Fluxo do ALUNO
-1. **`tela-turma`** (tela inicial): campo para digitar o código de 4 dígitos da turma. Botão "👩‍🏫 Sou professor(a)" leva para o fluxo do professor.
+1. **`tela-turma`** (tela inicial): campo para digitar o código de 4 dígitos da turma. Botão "Sou professor(a)" leva para o fluxo do professor.
 2. **`tela-auth`**: após validar o código da turma, o aluno escolhe entre abas "Entrar" / "Criar conta", informando `nome_usuario` + PIN de 4 dígitos.
-3. **`tela-menu`**: grade de cartões, um por módulo (`.cartao-modulo`), cada um mostrando seus 5 níveis como botões (`.nivel-btn`) — bloqueados (🔒), concluídos (✅) ou disponíveis (número do nível), conforme a lógica de desbloqueio sequencial.
-4. **`tela-jogo`**: mostra o enunciado num balão de fala ao lado de um mascote (macaco, emoji 🐒), 4 botões de alternativa, feedback visual (verde=certo, vermelho=errado), e troca o **cenário de fundo** (gradiente + emojis decorativos) conforme o campo `contexto` retornado pela API (classes `.tema-casa`, `.tema-mercado`, etc. em `.area-jogo`).
+3. **`tela-menu`**: grade de cartões, um por módulo (`.cartao-modulo`), cada um mostrando seus 5 níveis como botões (`.nivel-btn`) — bloqueados (ícone de cadeado), concluídos (ícone de check) ou disponíveis (número do nível), conforme a lógica de desbloqueio sequencial.
+4. **`tela-jogo`**: mostra o enunciado num balão de fala ao lado do emblema da marca (usado como avatar/guia), 4 botões de alternativa, feedback visual (verde=certo, vermelho=errado), e troca o **cenário de fundo** (gradiente + ícones SVG decorativos) conforme o campo `contexto` retornado pela API (classes `.tema-casa`, `.tema-mercado`, etc. em `.area-jogo`).
 
 Sessão do aluno persiste em `localStorage` (chave `calculoco_aluno`), guardando `{ id, nome_usuario, turma_id, turma_codigo }`, permitindo voltar direto pro menu em visitas futuras sem logar de novo (o app revalida buscando a turma pelo código salvo).
 
@@ -214,9 +214,11 @@ async function chamarApi(caminho, opcoes = {}) {
 ```
 Erros da API viram `Error` lançado, capturado nos `try/catch` de cada handler e exibido no `<p class="aviso">` correspondente daquela tela.
 
-## 8. Identidade visual / design system (`style.css`)
+## 8. Identidade visual / design system (`style.css` + ícones SVG em `index.html`)
 
-Tema "jungle/mascote macaco", pensado para crianças, mobile-first e responsivo.
+Tema lúdico (mascote em formato de emblema, paleta viva) pensado para crianças, mas construído como uma identidade de plataforma "de respeito" — sem depender de emojis do sistema operacional (que renderizam de formas inconsistentes entre navegadores/SOs e passam uma impressão amadora). Todo ícone da interface é um SVG de linha próprio, desenhado no próprio código.
+
+Mobile-first e responsivo.
 
 **Paleta** (custom properties em `:root`):
 ```css
@@ -233,12 +235,14 @@ Tema "jungle/mascote macaco", pensado para crianças, mobile-first e responsivo.
 - Botões "grandes" (`.btn-grande`) com sombra sólida deslocada para baixo (`box-shadow: 0 5px 0 <cor-escura>`), que "afunda" no `:active` — efeito 3D tipo botão de brinquedo.
 - Cartões brancos arredondados (`border-radius` generoso, 16–28px), sombras suaves coloridas (`rgba(18,40,92,...)`).
 - Cada módulo tem uma cor de destaque própria (`--cor-modulo`), usada na "bolha" do ícone e nos níveis concluídos.
-- Cada cenário de pergunta (`contexto`) tem um gradiente de fundo próprio (`.area-jogo.tema-*`) + emojis decorativos posicionados absolutamente.
+- Cada cenário de pergunta (`contexto`) tem um gradiente de fundo próprio (`.area-jogo.tema-*`) + um ícone de linha decorativo repetido em 4 posições (`.decor-1`–`.decor-4`), em baixa opacidade — um padrão discreto, não uma colagem de figurinhas.
 - Toasts (`#toast`) para mensagens rápidas não-bloqueantes (ex: "complete o nível anterior").
 
 Um "sol" decorativo fixo (`.sun`) com animação sutil de pulso fica no canto superior da tela em todas as telas, reforçando o clima "dia ensolarado/aventura".
 
-A logo oficial (fornecida pelo time, arquivo `calculoco-logo.jpeg`) mostra o mascote (macaquinho com boné laranja e moletom colorido) dentro de um emblema circular azul-noite com borda amarela, cercado de símbolos matemáticos (+, −, ×, e números), com o wordmark "CALCULOCO" abaixo em letras arco-íris (amarelo/rosa/verde/azul) e o slogan "PENSE · CALCULE · ACERTE · DIVIRTA-SE!". Documentos formais (ex: Termo de Abertura do Projeto) usam essa logo recortada (só o emblema circular, sem o wordmark) como ícone de cabeçalho, para manter um tom mais formal fora do app.
+**Ícones (`index.html`)**: um `<svg class="sr-only">` no início do `<body>` concentra todos os `<symbol>` reutilizados via `<use href="#icone-...">` — inclui o emblema da marca (`icone-logo`) e os ícones de linha (cadeado, check, voltar, sair, atualizar, seta, professor e um por contexto de cenário). Centralizar os símbolos assim evita duplicar SVG pela página e mantém a marca consistente entre a tela de login, o cabeçalho e o avatar da tela de jogo.
+
+**Logo (`icone-logo`, em `index.html`)**: emblema circular desenhado em SVG puro (sem arquivo de imagem externo) — fundo azul-noite com borda amarela, um rosto minimalista construído a partir de formas geométricas simples (círculos para orelhas/cabeça, elipse para o focinho, um traço para o sorriso). Usa as mesmas custom properties de cor da paleta (`var(--azul-noite)`, `var(--amarelo)`, etc.), então qualquer ajuste de paleta se reflete automaticamente na marca. É reaproveitado como logo de login, logo do cabeçalho e avatar do "guia" na tela de jogo — uma única marca em vez de mascote + ícones desencontrados.
 
 ## 9. Variáveis de ambiente (`backend/.env`, não versionado)
 
@@ -268,7 +272,6 @@ Vêm da Declaração de Escopo e do Termo de Abertura do Projeto (TAP) já elabo
 - Sem rate limiting nas rotas de login/cadastro (vulnerável a força bruta em teoria).
 - O dashboard do professor mostra só o **total agregado** de fases concluídas/acertos/erros por aluno — não quebra por módulo/operação (ex: não dá pra ver "esse aluno vai mal especificamente em divisão"). Foi cogitado como próximo passo.
 - Sem testes automatizados (unitários ou e2e) até o momento.
-- `TOTAL_FASES = 20` está hardcoded em mais de um lugar (`routes/fases.js` e `routes/turmas.js`) em vez de centralizado numa única constante exportada de `utils/perguntas.js` — pequena duplicação a considerar refatorar.
 
 ## 12. Convenções de estilo de código a seguir em novas contribuições
 
@@ -276,4 +279,5 @@ Vêm da Declaração de Escopo e do Termo de Abertura do Projeto (TAP) já elabo
 - Toda rota Express retorna cedo em caso de erro de validação (`return res.status(400).json({ erro: "..." })`), sem `else` aninhado.
 - Toda query ao Supabase desestrutura `{ data, error }` e checa `error` explicitamente antes de seguir — **isso é importante**, pois em caso de falha de rede o client do Supabase retorna `{ data: null, error: {...} }` em vez de lançar exceção, então pular essa checagem faz o bug passar silenciosamente (embora não derrube o processo).
 - CSS usa nomes de classe em português, BEM-like informal (`.cartao-turma`, `.nivel-btn.concluido`, `.area-jogo.tema-mercado`).
-- Sempre que adicionar um novo "tema"/cenário em `perguntas.js`, adicionar o CSS correspondente (`.area-jogo.tema-<nome>`) e a lista de emojis decorativos em `CENARIOS` no `app.js`, para manter os dois lados sincronizados.
+- Sempre que adicionar um novo "tema"/cenário em `perguntas.js`, sincronizar três pontas: o CSS do gradiente de fundo (`.area-jogo.tema-<nome>`), o `<symbol id="icone-<nome>">` correspondente no sprite SVG em `index.html`, e o nome do contexto na lista `CONTEXTOS_VALIDOS` em `app.js`.
+- Não usar emojis de sistema operacional na interface (texto de botão, feedback, decoração) — eles renderizam de forma inconsistente entre navegadores/SOs. Novos ícones entram como `<symbol>` no sprite SVG de `index.html` e são referenciados via `<use href="#icone-...">`, seguindo o estilo de linha (`stroke="currentColor"`) já usado pelos demais.

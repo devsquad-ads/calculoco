@@ -1,4 +1,4 @@
-# Calculoco 🐒
+# Calculoco
 
 Jogo educativo web para crianças praticarem as quatro operações básicas de matemática.
 
