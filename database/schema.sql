@@ -41,17 +41,24 @@ create table if not exists alunos (
   unique (turma_id, nome_usuario)
 );
 
--- Progresso do aluno por fase. Uma linha por (aluno, fase).
+-- Progresso do aluno por fase. Uma linha por (aluno, fase). A pontuação
+-- premia acertar de primeira: 20 pontos na 1ª tentativa, 10 na 2ª, 5 na
+-- 3ª, 0 da 4ª em diante (ver backend/routes/progresso.js).
 create table if not exists progresso (
   id uuid primary key default gen_random_uuid(),
   aluno_id uuid not null references alunos(id) on delete cascade,
   fase_numero integer not null,
   concluida boolean not null default false,
-  acertos integer not null default 0,
-  erros integer not null default 0,
+  pontos integer not null default 0,
   atualizado_em timestamptz not null default now(),
   unique (aluno_id, fase_numero)
 );
+
+-- Caso esteja atualizando um banco já existente (criado antes da pontuação
+-- por tentativas substituir os contadores de acertos/erros):
+alter table progresso add column if not exists pontos integer not null default 0;
+alter table progresso drop column if exists acertos;
+alter table progresso drop column if exists erros;
 
 create index if not exists idx_alunos_turma on alunos (turma_id);
 create index if not exists idx_progresso_aluno on progresso (aluno_id);
