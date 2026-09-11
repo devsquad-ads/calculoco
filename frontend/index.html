@@ -11,21 +11,9 @@
 </head>
 <body>
 
-<!-- ===================== ÍCONES (emblema da marca + ícones de linha reutilizados via <use>) ===================== -->
+<!-- ===================== ÍCONES DE LINHA (logo e mascote usam os arquivos em img/, ver mais abaixo) ===================== -->
 <svg class="sr-only" aria-hidden="true" focusable="false">
   <defs>
-    <symbol id="icone-logo" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="30" fill="var(--azul-noite)"></circle>
-      <circle cx="32" cy="32" r="30" fill="none" stroke="var(--amarelo)" stroke-width="3"></circle>
-      <circle cx="16" cy="21" r="7" fill="var(--laranja)"></circle>
-      <circle cx="48" cy="21" r="7" fill="var(--laranja)"></circle>
-      <circle cx="32" cy="31" r="17" fill="var(--amarelo)"></circle>
-      <ellipse cx="32" cy="36" rx="10" ry="8" fill="var(--branco)"></ellipse>
-      <circle cx="27" cy="29" r="2.1" fill="var(--azul-noite)"></circle>
-      <circle cx="37" cy="29" r="2.1" fill="var(--azul-noite)"></circle>
-      <path d="M26 38 Q32 43 38 38" fill="none" stroke="var(--azul-noite)" stroke-width="2.2" stroke-linecap="round"></path>
-    </symbol>
-
     <symbol id="icone-professor" viewBox="0 0 24 24">
       <path d="M12 3 2 8l10 5 10-5-10-5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
       <path d="M6 10.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -115,7 +103,7 @@
 <!-- ===================== TELA 1: CÓDIGO DA TURMA ===================== -->
 <section class="tela ativa" id="tela-turma">
   <div class="cartao-login">
-    <svg class="logo-login" aria-hidden="true"><use href="#icone-logo"></use></svg>
+    <img class="logo-login" src="img/logo.jpeg" alt="Calculoco">
     <h1>Bem-vindo ao Calculoco!</h1>
     <p class="sub">Pense · Calcule · Acerte · Divirta-se</p>
 
@@ -137,7 +125,7 @@
 <!-- ===================== TELA PROFESSOR 1: LOGIN / CADASTRO ===================== -->
 <section class="tela" id="tela-professor-auth">
   <div class="cartao-login">
-    <svg class="logo-login" aria-hidden="true"><use href="#icone-logo"></use></svg>
+    <img class="logo-login" src="img/logo.jpeg" alt="Calculoco">
     <h1>Área do professor</h1>
     <p class="sub">Gerencie suas turmas e acompanhe o desempenho dos alunos</p>
 
@@ -170,7 +158,7 @@
 <section class="tela" id="tela-professor-turmas">
   <header class="topo">
     <div class="marca">
-      <svg class="marca-logo" aria-hidden="true"><use href="#icone-logo"></use></svg>
+      <img class="marca-logo" src="img/logo-icone.jpeg" alt="Calculoco">
       <div>
         <div class="titulo">Calculoco</div>
         <div class="sub-topo" id="prof-saudacao">Olá!</div>
@@ -236,7 +224,7 @@
 <!-- ===================== TELA 2: LOGIN / CADASTRO DO ALUNO ===================== -->
 <section class="tela" id="tela-auth">
   <div class="cartao-login">
-    <svg class="logo-login" aria-hidden="true"><use href="#icone-logo"></use></svg>
+    <img class="logo-login" src="img/logo.jpeg" alt="Calculoco">
     <h1 id="titulo-auth">Turma encontrada!</h1>
     <p class="sub" id="sub-auth">Agora entre com seu usuário</p>
 
@@ -267,7 +255,7 @@
 <section class="tela" id="tela-menu">
   <header class="topo">
     <div class="marca">
-      <svg class="marca-logo" aria-hidden="true"><use href="#icone-logo"></use></svg>
+      <img class="marca-logo" src="img/logo-icone.jpeg" alt="Calculoco">
       <div>
         <div class="titulo">Calculoco</div>
         <div class="sub-topo" id="saudacao">Olá!</div>
@@ -303,7 +291,7 @@
     <div class="cenario-decor" id="cenario-decor" aria-hidden="true"></div>
 
     <div class="linha-mascote">
-      <div class="mascote" aria-hidden="true"><svg><use href="#icone-logo"></use></svg></div>
+      <div class="mascote" aria-hidden="true"><img id="img-mascote" src="img/mascote/1.jpeg" alt=""></div>
       <div class="balao-fala">
         <p class="enunciado" id="texto-enunciado">Carregando pergunta...</p>
       </div>

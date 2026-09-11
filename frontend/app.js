@@ -487,7 +487,22 @@ document.getElementById("btn-voltar-menu").addEventListener("click", () => {
 
 const areaJogo = document.getElementById("area-jogo");
 const cenarioDecor = document.getElementById("cenario-decor");
+const imgMascote = document.getElementById("img-mascote");
 const pillFase = document.getElementById("pill-fase");
+
+// Fotos do mascote (sempre o mesmo personagem, em poses diferentes), sorteadas
+// a cada pergunta para dar a impressão de que ele está "vivo" enquanto fala.
+const FOTOS_MASCOTE = [
+  "img/mascote/1.jpeg",
+  "img/mascote/2.jpeg",
+  "img/mascote/3.jpeg",
+  "img/mascote/4.jpeg",
+];
+
+function sortearPoseMascote() {
+  const indice = Math.floor(Math.random() * FOTOS_MASCOTE.length);
+  imgMascote.src = FOTOS_MASCOTE[indice];
+}
 const textoEnunciado = document.getElementById("texto-enunciado");
 const opcoesResposta = document.getElementById("opcoes-resposta");
 const textoFeedback = document.getElementById("texto-feedback");
@@ -538,6 +553,7 @@ async function carregarPergunta() {
   btnContinuarJogo.classList.add("oculto");
   btnTentarNovamente.classList.add("oculto");
   estado.fase.respondida = false;
+  sortearPoseMascote();
 
   try {
     const questao = await chamarApi(`/fases/${estado.fase.numero}/questao`);
