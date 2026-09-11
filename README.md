@@ -46,10 +46,19 @@ npm start
 
 O servidor sobe em `http://localhost:3000` e **também serve o frontend** (pasta `frontend/`) automaticamente — não precisa de um segundo servidor. Basta abrir `http://localhost:3000` no navegador.
 
-## 3. Estrutura de pastas
+## 3. Deploy na Vercel
+
+O projeto já vem com um `vercel.json` na raiz pronto para isso: o backend (`backend/server.js`) é publicado como uma função serverless (`@vercel/node`) e o frontend (pasta `frontend/`) como arquivos estáticos — os dois no mesmo domínio, sem CORS entre eles.
+
+1. Importe o repositório em [vercel.com/new](https://vercel.com/new).
+2. Em **Project Settings → Environment Variables**, adicione as mesmas três variáveis do `.env` local: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` e `QUESTION_SECRET`. A Vercel **não lê o arquivo `.env`** do repositório (ele nem é versionado) — as variáveis precisam ser cadastradas por lá.
+3. Faça o deploy (ou **Redeploy**, se o projeto já existia e só faltavam as variáveis). Não é preciso configurar Build Command nem Output Directory — o `vercel.json` já define as duas partes (função da API + estáticos do frontend).
+
+## 4. Estrutura de pastas
 
 ```
 calculoco/
+├── vercel.json          # roteia /api/* para o backend (função serverless) e o resto para o frontend estático
 ├── frontend/
 │   ├── index.html      # telas: turma → login/cadastro do aluno → menu → jogo
 │   │                    #        + login/cadastro do professor → minhas turmas → dashboard
@@ -73,11 +82,11 @@ calculoco/
     └── schema.sql        # tabelas professores / turmas / alunos / progresso
 ```
 
-## 4. Segurança das perguntas
+## 5. Segurança das perguntas
 
 A resposta correta **nunca** é enviada em texto aberto para o navegador. O backend assina um token (HMAC-SHA256, com validade de 5 minutos) contendo o índice da alternativa correta. O frontend devolve esse token junto com a resposta escolhida, e o backend confirma o acerto comparando a assinatura — assim não dá para "ver a resposta certa" só inspecionando a resposta da API.
 
-## 5. Endpoints da área do professor
+## 6. Endpoints da área do professor
 
 | Rota | Descrição |
 |---|---|
@@ -87,8 +96,8 @@ A resposta correta **nunca** é enviada em texto aberto para o navegador. O back
 | `POST /api/turmas` | Cria uma turma `{ nome_turma, professor_id }` (exige professor autenticado) |
 | `GET /api/turmas/:turma_id/desempenho?professor_id=...` | Dashboard: progresso de cada aluno da turma (só o professor dono da turma pode acessar) |
 
-## 6. Próximos passos sugeridos
+## 7. Próximos passos sugeridos
 
 - Adicionar recuperação de senha do professor.
 - Expandir o dashboard com um detalhamento por módulo (não só o total de fases concluídas).
-- Hospedar o backend em um serviço gratuito (Render, Railway, Fly.io) e apontar as variáveis de ambiente do Supabase por lá.
+- Alternativas de hospedagem além da Vercel: Render, Railway ou Fly.io (backend Node "tradicional", sem modelo serverless).
