@@ -362,7 +362,7 @@ async function abrirDashboardTurma(turma) {
     const resultado = await chamarApi(
       `/turmas/${turma.id}/desempenho?professor_id=${estado.professor.id}`
     );
-    renderizarDesempenho(resultado.alunos || []);
+    renderizarDesempenho(resultado.alunos || [], turma);
   } catch (erro) {
     tabelaDesempenho.classList.add("oculto");
     dashVazio.classList.remove("oculto");
@@ -370,7 +370,7 @@ async function abrirDashboardTurma(turma) {
   }
 }
 
-function renderizarDesempenho(alunos) {
+function renderizarDesempenho(alunos, turma) {
   if (alunos.length === 0) {
     tabelaDesempenho.classList.add("oculto");
     dashVazio.classList.remove("oculto");
@@ -394,10 +394,39 @@ function renderizarDesempenho(alunos) {
             </div>
           </td>
           <td>${pontosComEstrela(aluno.pontuacao_total)}</td>
+          <td>
+            <button type="button" class="btn-linha btn-linha-icone btn-redefinir-pin" data-aluno-id="${aluno.aluno_id}" data-aluno-nome="${aluno.nome_usuario}">
+              <svg class="icone-inline" aria-hidden="true"><use href="#icone-refresh"></use></svg>
+              Redefinir
+            </button>
+          </td>
         </tr>
       `;
     })
     .join("");
+
+  corpoTabelaDesempenho.querySelectorAll(".btn-redefinir-pin").forEach((botao) => {
+    botao.addEventListener("click", () =>
+      redefinirPinAluno(botao.dataset.alunoId, botao.dataset.alunoNome, turma)
+    );
+  });
+}
+
+async function redefinirPinAluno(alunoId, nomeUsuario, turma) {
+  const confirmado = window.confirm(
+    `Redefinir a senha de "${nomeUsuario}"?\n\nA nova senha (PIN) dele passa a ser o código da turma: ${turma.codigo}`
+  );
+  if (!confirmado) return;
+
+  try {
+    await chamarApi(`/turmas/${turma.id}/alunos/${alunoId}/redefinir-pin`, {
+      method: "POST",
+      body: JSON.stringify({ professor_id: estado.professor.id }),
+    });
+    mostrarToast(`Senha de ${nomeUsuario} redefinida para ${turma.codigo}.`);
+  } catch (erro) {
+    mostrarToast(erro.message);
+  }
 }
 
 /* ===================== TELA 3: MENU DE MÓDULOS E NÍVEIS ===================== */

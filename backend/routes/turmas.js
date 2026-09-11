@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const bcrypt = require("bcryptjs");
 const supabase = require("../supabaseClient");
 const { TOTAL_FASES } = require("../utils/perguntas");
 
@@ -144,6 +145,47 @@ router.get("/:turma_id/desempenho", async (req, res) => {
     turma: { id: turma.id, codigo: turma.codigo, nome_turma: turma.nome_turma },
     alunos: desempenho,
   });
+});
+
+// POST /api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin  { professor_id }
+// Redefine o PIN do aluno para o código da turma — usado pelo professor
+// quando o aluno esquece a senha. Só o professor dono da turma pode.
+router.post("/:turma_id/alunos/:aluno_id/redefinir-pin", async (req, res) => {
+  const { turma_id, aluno_id } = req.params;
+  const { professor_id } = req.body;
+
+  const { data: turma, error: erroTurma } = await supabase
+    .from("turmas")
+    .select("id, codigo, professor_id")
+    .eq("id", turma_id)
+    .maybeSingle();
+
+  if (erroTurma) return res.status(500).json({ erro: erroTurma.message });
+  if (!turma) return res.status(404).json({ erro: "Turma não encontrada." });
+
+  if (!professor_id || turma.professor_id !== professor_id) {
+    return res.status(403).json({ erro: "Você não tem permissão para alterar esta turma." });
+  }
+
+  const { data: aluno, error: erroAluno } = await supabase
+    .from("alunos")
+    .select("id, turma_id")
+    .eq("id", aluno_id)
+    .maybeSingle();
+
+  if (erroAluno) return res.status(500).json({ erro: erroAluno.message });
+  if (!aluno || aluno.turma_id !== turma_id) {
+    return res.status(404).json({ erro: "Aluno não encontrado nesta turma." });
+  }
+
+  const novoPinHash = await bcrypt.hash(turma.codigo, 10);
+  const { error } = await supabase
+    .from("alunos")
+    .update({ pin_hash: novoPinHash })
+    .eq("id", aluno_id);
+
+  if (error) return res.status(500).json({ erro: error.message });
+  res.json({ ok: true, novo_pin: turma.codigo });
 });
 
 module.exports = router;
