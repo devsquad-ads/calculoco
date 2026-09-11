@@ -74,13 +74,13 @@ body{
 }
 
 /* ===================== TELAS DE CARTÃO CENTRAL (turma / auth) ===================== */
-#tela-turma, #tela-auth{
+#tela-turma, #tela-auth, #tela-professor-auth{
   display:none;
   align-items:center;
   justify-content:center;
   padding:24px;
 }
-#tela-turma.ativa, #tela-auth.ativa{display:flex;}
+#tela-turma.ativa, #tela-auth.ativa, #tela-professor-auth.ativa{display:flex;}
 
 .cartao-login{
   background:var(--branco);
