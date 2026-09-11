@@ -452,6 +452,17 @@ body{
 .feedback.ok{color:var(--verde-escuro);}
 .feedback.erro{color:var(--vermelho-escuro);}
 
+.badge-pontos{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  white-space:nowrap;
+}
+.icone-estrela{
+  width:18px;height:18px;
+  vertical-align:-3px;
+}
+
 .cta-jogar{
   width:100%;
   font-family:var(--font-display);
@@ -505,26 +516,28 @@ footer{
 /* ===================== CONFETE DE COMEMORAÇÃO ===================== */
 #confete-container{
   position:fixed;
-  inset:0;
+  top:0; left:0; right:0; bottom:0;
   overflow:hidden;
   pointer-events:none;
-  z-index:90;
+  z-index:9999;
 }
 .confete{
   position:absolute;
-  top:-20px;
-  width:10px;height:16px;
+  top:-24px;
+  width:12px;height:18px;
   background:var(--cor, var(--amarelo));
   border-radius:2px;
   opacity:0.95;
-  animation: confete-cair var(--duracao, 2s) cubic-bezier(.35,.55,.65,1) var(--atraso, 0s) forwards;
+  will-change:transform, opacity;
+  animation: confete-cair var(--duracao, 2.2s) cubic-bezier(.35,.55,.65,1) var(--atraso, 0s) forwards;
 }
 @keyframes confete-cair{
   0%{ transform: translateY(0) translateX(0) rotate(0deg); opacity:1; }
   100%{ transform: translateY(105vh) translateX(var(--deriva, 0px)) rotate(var(--rotacao, 360deg)); opacity:0.25; }
 }
+/* Menos movimento pra quem pede, mas sem apagar a comemoração por completo. */
 @media (prefers-reduced-motion: reduce){
-  .confete{ animation: none; display:none; }
+  .confete{ animation-duration:.9s; }
 }
 
 @media (max-width:520px){

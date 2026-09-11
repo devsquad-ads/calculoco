@@ -29,6 +29,13 @@ function calcularPontos(tentativa) {
   return PONTOS_POR_TENTATIVA[tentativa - 1] || 0;
 }
 
+// Marcação reutilizada em qualquer lugar que mostre pontuação (feedback do
+// jogo, dashboard do professor): número + ícone de estrela, no lugar de
+// só um número solto.
+function pontosComEstrela(pontos) {
+  return `<span class="badge-pontos">${pontos} <img class="icone-estrela" src="img/estrela.png" alt="pontos"></span>`;
+}
+
 const estado = {
   turma: null, // { id, codigo, nome_turma, nome_professor }
   aluno: null, // { id, nome_usuario, turma_id }
@@ -386,7 +393,7 @@ function renderizarDesempenho(alunos) {
               <span class="barra-progresso-texto">${aluno.fases_concluidas}/${aluno.total_fases}</span>
             </div>
           </td>
-          <td>${aluno.pontuacao_total}</td>
+          <td>${pontosComEstrela(aluno.pontuacao_total)}</td>
         </tr>
       `;
     })
@@ -522,7 +529,9 @@ const CORES_CONFETE = [
 ];
 
 function dispararConfete() {
-  const quantidade = 40;
+  if (!confeteContainer) return;
+
+  const quantidade = 55;
   for (let i = 0; i < quantidade; i++) {
     const pedaco = document.createElement("span");
     pedaco.className = "confete";
@@ -657,9 +666,9 @@ async function responder(indiceEscolhido, botaoClicado) {
 
     if (resultado.correta) {
       const pontosGanhos = calcularPontos(estado.fase.tentativas);
-      textoFeedback.textContent =
+      textoFeedback.innerHTML =
         pontosGanhos > 0
-          ? `Muito bem, você acertou! +${pontosGanhos} pontos`
+          ? `Muito bem, você acertou! ${pontosComEstrela(`+${pontosGanhos}`)}`
           : "Muito bem, você acertou!";
       textoFeedback.className = "feedback ok";
       dispararConfete();
