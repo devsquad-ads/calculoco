@@ -32,7 +32,8 @@ calculoco/
 │   └── img/
 │       ├── logo.jpeg          # original fornecido pelo time (fundo branco), só como referência
 │       ├── logo.png           # logo.jpeg com o fundo removido — é este que a interface usa
-│       └── mascote/1.jpeg..4.jpeg  # 4 poses do mascote, sorteadas a cada pergunta
+│       ├── mascote/1.jpeg..4.jpeg  # 4 poses do mascote, sorteadas a cada pergunta
+│       └── estrela.png        # ícone usado ao lado de qualquer pontuação exibida
 ├── backend/
 │   ├── server.js               # bootstrap do Express, monta as rotas, serve o frontend estático
 │   ├── supabaseClient.js       # cria o client do Supabase a partir das env vars
@@ -57,7 +58,7 @@ O projeto inteiro usa terminadores de linha **CRLF** (o autor desenvolve no Wind
 
 ## 4. Modelo de dados (Supabase / PostgreSQL)
 
-Arquivo: `database/schema.sql`. O script é **idempotente**: usa `create table if not exists` e `add column if not exists`, então pode ser reexecutado com segurança em um banco já existente sem apagar dados.
+Arquivo: `database/schema.sql`. O script é **idempotente**: usa `create table if not exists` e `create index if not exists`, então pode ser reexecutado com segurança sem duplicar nada. Ele reflete só o formato atual das tabelas — não carrega migrações de formatos antigos (isso é responsabilidade de quem já tinha um banco anterior rodar as migrações necessárias antes, não deste script).
 
 ### `professores`
 | coluna | tipo | observação |
@@ -117,7 +118,7 @@ Arquivo: `database/schema.sql`. O script é **idempotente**: usa `create table i
   }
   ```
 - **Desbloqueio sequencial**: a fase N só é jogável se a fase N-1 estiver com `concluida = true` (a fase 1 é sempre liberada). Essa checagem é feita no frontend, olhando o array `progresso` carregado do backend.
-- **Pontuação por tentativa**: cada vez que o aluno erra e clica em "tentar novamente", uma nova pergunta é gerada para a mesma fase (`carregarPergunta()` incrementa `estado.fase.tentativas`). Ao acertar, os pontos ganhos dependem de quantas perguntas ele precisou até acertar: 1ª tentativa = 20 pontos, 2ª = 10, 3ª = 5, 4ª em diante = 0. A regra vive em `calcularPontos()` (`frontend/app.js`) e é validada no backend (`PONTOS_POSSIVEIS` em `routes/progresso.js`, que só aceita `0, 5, 10 ou 20`). O valor sobrescreve (não soma) o `pontos` daquela fase a cada nova conclusão — o mesmo modelo "última tentativa registrada" que já valia para `concluida`.
+- **Pontuação por tentativa**: cada vez que o aluno erra e clica em "tentar novamente", uma nova pergunta é gerada para a mesma fase (`carregarPergunta()` incrementa `estado.fase.tentativas`). Ao acertar, os pontos ganhos dependem de quantas perguntas ele precisou até acertar: 1ª tentativa = 20 pontos, 2ª = 10, 3ª = 5, 4ª em diante = 0. A regra vive em `calcularPontos()` (`frontend/app.js`) e é validada no backend (`PONTOS_POSSIVEIS` em `routes/progresso.js`, que só aceita `0, 5, 10 ou 20`). O valor sobrescreve (não soma) o `pontos` daquela fase a cada nova conclusão — o mesmo modelo "última tentativa registrada" que já valia para `concluida`. Em qualquer lugar da interface que mostre pontuação, o número vem sempre acompanhado do ícone `frontend/img/estrela.png` (helper `pontosComEstrela()` em `app.js`), nunca só o número solto.
 
 ### Geração de perguntas (`backend/utils/perguntas.js`)
 
@@ -190,14 +191,14 @@ O app é uma **SPA simples de uma página só**: todas as "telas" são `<section
 1. **`tela-turma`** (tela inicial): campo para digitar o código de 4 dígitos da turma. Botão "Sou professor(a)" leva para o fluxo do professor.
 2. **`tela-auth`**: após validar o código da turma, o aluno escolhe entre abas "Entrar" / "Criar conta", informando `nome_usuario` + PIN de 4 dígitos.
 3. **`tela-menu`**: grade de cartões, um por módulo (`.cartao-modulo`), cada um mostrando seus 5 níveis como botões (`.nivel-btn`) — bloqueados (ícone de cadeado), concluídos (ícone de check) ou disponíveis (número do nível), conforme a lógica de desbloqueio sequencial.
-4. **`tela-jogo`**: mostra o enunciado num balão de fala ao lado de uma foto do mascote (avatar circular, `#img-mascote`), 4 botões de alternativa, feedback visual (verde=certo, vermelho=errado, com os pontos ganhos no texto), e troca o **cenário de fundo** (gradiente + ícones SVG decorativos) conforme o campo `contexto` retornado pela API (classes `.tema-casa`, `.tema-mercado`, etc. em `.area-jogo`). A cada pergunta carregada (`carregarPergunta()`), `sortearPoseMascote()` troca a foto do mascote por uma aleatória entre as 4 em `frontend/img/mascote/`, dando a impressão de que o personagem está em poses diferentes enquanto "fala". Ao acertar, `dispararConfete()` solta confete caindo pela tela (CSS puro, `#confete-container`) e `tocarSomComemoracao()` sintetiza um pequeno arpejo de comemoração via Web Audio API (sem depender de nenhum arquivo de áudio).
+4. **`tela-jogo`**: mostra o enunciado num balão de fala ao lado de uma foto do mascote (avatar circular, `#img-mascote`), 4 botões de alternativa, feedback visual (verde=certo, vermelho=errado, com os pontos ganhos e o ícone de estrela no texto), e troca o **cenário de fundo** (gradiente + ícones SVG decorativos) conforme o campo `contexto` retornado pela API (classes `.tema-casa`, `.tema-mercado`, etc. em `.area-jogo`). A cada pergunta carregada (`carregarPergunta()`), `sortearPoseMascote()` troca a foto do mascote por uma aleatória entre as 4 em `frontend/img/mascote/`, dando a impressão de que o personagem está em poses diferentes enquanto "fala". Ao acertar, `dispararConfete()` solta confete caindo pela tela (CSS puro, `#confete-container`) e `tocarSomComemoracao()` sintetiza um pequeno arpejo de comemoração via Web Audio API (sem depender de nenhum arquivo de áudio).
 
 Sessão do aluno persiste em `localStorage` (chave `calculoco_aluno`), guardando `{ id, nome_usuario, turma_id, turma_codigo }`, permitindo voltar direto pro menu em visitas futuras sem logar de novo (o app revalida buscando a turma pelo código salvo).
 
 ### Fluxo do PROFESSOR
 1. **`tela-professor-auth`**: abas "Entrar"/"Criar conta" — cadastro pede nome completo + usuário + senha; login só usuário + senha.
 2. **`tela-professor-turmas`** ("Minhas turmas"): formulário para criar nova turma (só pede o nome da turma — o professor já está autenticado) + grade de cartões clicáveis, um por turma (nome, código, contagem de alunos).
-3. **`tela-professor-dashboard`**: ao clicar numa turma, mostra uma tabela com uma linha por aluno: nome, barra de progresso visual (X/20 fases concluídas) e pontuação total — já vem ordenada da maior para a menor pontuação (o backend ordena, o frontend só renderiza na ordem recebida).
+3. **`tela-professor-dashboard`**: ao clicar numa turma, mostra uma tabela com uma linha por aluno: nome, barra de progresso visual (X/20 fases concluídas) e pontuação total (número + ícone de estrela) — já vem ordenada da maior para a menor pontuação (o backend ordena, o frontend só renderiza na ordem recebida).
 
 Sessão do professor persiste em `localStorage` (chave `calculoco_professor`), guardando `{ id, usuario, nome }`.
 
@@ -250,6 +251,7 @@ Um "sol" decorativo fixo (`.sun`) com animação sutil de pulso fica no canto su
 - `logo.jpeg`: arquivo original fornecido pelo time (lockup completo da marca — emblema circular + wordmark "CALCULOCO" + slogan — com fundo branco opaco). Mantido no repositório como referência/fonte, mas não é referenciado direto no HTML.
 - `logo.png`: o mesmo lockup, com o fundo branco removido (recorte por flood-fill a partir das bordas + borda anti-serrilhada, redimensionado para 420×420) — é essa versão transparente que aparece em toda a interface: `.logo-login` nas telas de login e `.marca-logo` no cabeçalho. Usar sempre a logo completa (nunca um recorte só do emblema) mesmo no ícone pequeno do cabeçalho.
 - `mascote/1.jpeg` a `mascote/4.jpeg`: o mesmo personagem em 4 poses diferentes (fundo branco, recorte circular via CSS). `sortearPoseMascote()` em `app.js` sorteia uma delas a cada pergunta carregada e atualiza `#img-mascote`, dando a impressão de que o mascote está "vivo" enquanto fala.
+- `estrela.png`: ícone usado sempre que a interface mostra pontuação (feedback de acerto, dashboard do professor) — ver `pontosComEstrela()` em `app.js`.
 
 ## 9. Variáveis de ambiente (`backend/.env`, não versionado)
 
@@ -288,3 +290,4 @@ Vêm da Declaração de Escopo e do Termo de Abertura do Projeto (TAP) já elabo
 - CSS usa nomes de classe em português, BEM-like informal (`.cartao-turma`, `.nivel-btn.concluido`, `.area-jogo.tema-mercado`).
 - Sempre que adicionar um novo "tema"/cenário em `perguntas.js`, sincronizar três pontas: o CSS do gradiente de fundo (`.area-jogo.tema-<nome>`), o `<symbol id="icone-<nome>">` correspondente no sprite SVG em `index.html`, e o nome do contexto na lista `CONTEXTOS_VALIDOS` em `app.js`.
 - Não usar emojis de sistema operacional na interface (texto de botão, feedback, decoração) — eles renderizam de forma inconsistente entre navegadores/SOs. Novos ícones entram como `<symbol>` no sprite SVG de `index.html` e são referenciados via `<use href="#icone-...">`, seguindo o estilo de linha (`stroke="currentColor"`) já usado pelos demais.
+- Todo enunciado de pergunta (`backend/utils/perguntas.js`) precisa concordar em número: quando a quantidade sorteada é 1, o substantivo (e o adjetivo/verbo que concorda com ele) vai para o singular — nunca "1 figurinhas coladas". Use o helper `pluralizar(quantidade, singular, plural)` já existente em vez de escrever a palavra no plural direto no template.
