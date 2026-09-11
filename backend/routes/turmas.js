@@ -113,7 +113,7 @@ router.get("/:turma_id/desempenho", async (req, res) => {
   if (alunoIds.length) {
     const { data: progresso, error: erroProgresso } = await supabase
       .from("progresso")
-      .select("aluno_id, fase_numero, concluida, acertos, erros")
+      .select("aluno_id, fase_numero, concluida, pontos")
       .in("aluno_id", alunoIds);
 
     if (erroProgresso) return res.status(500).json({ erro: erroProgresso.message });
@@ -124,25 +124,21 @@ router.get("/:turma_id/desempenho", async (req, res) => {
     });
   }
 
-  const desempenho = (alunos || []).map((aluno) => {
-    const linhas = progressoPorAluno[aluno.id] || [];
-    const fasesConcluidas = linhas.filter((l) => l.concluida).length;
-    const totalAcertos = linhas.reduce((soma, l) => soma + (l.acertos || 0), 0);
-    const totalErros = linhas.reduce((soma, l) => soma + (l.erros || 0), 0);
-    const totalRespostas = totalAcertos + totalErros;
-    const percentualAcerto =
-      totalRespostas > 0 ? Math.round((totalAcertos / totalRespostas) * 100) : null;
+  const desempenho = (alunos || [])
+    .map((aluno) => {
+      const linhas = progressoPorAluno[aluno.id] || [];
+      const fasesConcluidas = linhas.filter((l) => l.concluida).length;
+      const pontuacaoTotal = linhas.reduce((soma, l) => soma + (l.pontos || 0), 0);
 
-    return {
-      aluno_id: aluno.id,
-      nome_usuario: aluno.nome_usuario,
-      fases_concluidas: fasesConcluidas,
-      total_fases: TOTAL_FASES,
-      acertos: totalAcertos,
-      erros: totalErros,
-      percentual_acerto: percentualAcerto,
-    };
-  });
+      return {
+        aluno_id: aluno.id,
+        nome_usuario: aluno.nome_usuario,
+        fases_concluidas: fasesConcluidas,
+        total_fases: TOTAL_FASES,
+        pontuacao_total: pontuacaoTotal,
+      };
+    })
+    .sort((a, b) => b.pontuacao_total - a.pontuacao_total);
 
   res.json({
     turma: { id: turma.id, codigo: turma.codigo, nome_turma: turma.nome_turma },
