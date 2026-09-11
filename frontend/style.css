@@ -529,7 +529,7 @@ footer{
   border-radius:2px;
   opacity:0.95;
   will-change:transform, opacity;
-  animation: confete-cair var(--duracao, 2.2s) cubic-bezier(.35,.55,.65,1) var(--atraso, 0s) forwards;
+  animation: confete-cair var(--duracao, 4s) cubic-bezier(.35,.55,.65,1) var(--atraso, 0s) forwards;
 }
 @keyframes confete-cair{
   0%{ transform: translateY(0) translateX(0) rotate(0deg); opacity:1; }

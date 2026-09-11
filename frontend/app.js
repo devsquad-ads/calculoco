@@ -537,8 +537,8 @@ function dispararConfete() {
     pedaco.className = "confete";
     pedaco.style.left = `${Math.random() * 100}%`;
     pedaco.style.setProperty("--cor", CORES_CONFETE[Math.floor(Math.random() * CORES_CONFETE.length)]);
-    pedaco.style.setProperty("--atraso", `${(Math.random() * 0.3).toFixed(2)}s`);
-    pedaco.style.setProperty("--duracao", `${(1.6 + Math.random() * 0.9).toFixed(2)}s`);
+    pedaco.style.setProperty("--atraso", `${(Math.random() * 0.5).toFixed(2)}s`);
+    pedaco.style.setProperty("--duracao", `${(3 + Math.random() * 1.8).toFixed(2)}s`);
     pedaco.style.setProperty("--rotacao", `${Math.round(Math.random() * 720 - 360)}deg`);
     pedaco.style.setProperty("--deriva", `${Math.round(Math.random() * 160 - 80)}px`);
     pedaco.addEventListener("animationend", () => pedaco.remove());
