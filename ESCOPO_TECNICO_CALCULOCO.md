@@ -28,7 +28,11 @@ calculoco/
 ├── frontend/
 │   ├── index.html      # todas as "telas" do app vivem neste único HTML (SPA simples por show/hide de <section>)
 │   ├── style.css        # design system completo (cores, tipografia, componentes)
-│   └── app.js            # toda a lógica: estado, chamadas à API, renderização, navegação
+│   ├── app.js            # toda a lógica: estado, chamadas à API, renderização, navegação
+│   └── img/
+│       ├── logo.jpeg          # lockup completo da marca (login)
+│       ├── logo-icone.jpeg    # recorte só do emblema, pro cabeçalho
+│       └── mascote/1.jpeg..4.jpeg  # 4 poses do mascote, sorteadas a cada pergunta
 ├── backend/
 │   ├── server.js               # bootstrap do Express, monta as rotas, serve o frontend estático
 │   ├── supabaseClient.js       # cria o client do Supabase a partir das env vars
@@ -186,7 +190,7 @@ O app é uma **SPA simples de uma página só**: todas as "telas" são `<section
 1. **`tela-turma`** (tela inicial): campo para digitar o código de 4 dígitos da turma. Botão "Sou professor(a)" leva para o fluxo do professor.
 2. **`tela-auth`**: após validar o código da turma, o aluno escolhe entre abas "Entrar" / "Criar conta", informando `nome_usuario` + PIN de 4 dígitos.
 3. **`tela-menu`**: grade de cartões, um por módulo (`.cartao-modulo`), cada um mostrando seus 5 níveis como botões (`.nivel-btn`) — bloqueados (ícone de cadeado), concluídos (ícone de check) ou disponíveis (número do nível), conforme a lógica de desbloqueio sequencial.
-4. **`tela-jogo`**: mostra o enunciado num balão de fala ao lado do emblema da marca (usado como avatar/guia), 4 botões de alternativa, feedback visual (verde=certo, vermelho=errado), e troca o **cenário de fundo** (gradiente + ícones SVG decorativos) conforme o campo `contexto` retornado pela API (classes `.tema-casa`, `.tema-mercado`, etc. em `.area-jogo`).
+4. **`tela-jogo`**: mostra o enunciado num balão de fala ao lado de uma foto do mascote (avatar circular, `#img-mascote`), 4 botões de alternativa, feedback visual (verde=certo, vermelho=errado), e troca o **cenário de fundo** (gradiente + ícones SVG decorativos) conforme o campo `contexto` retornado pela API (classes `.tema-casa`, `.tema-mercado`, etc. em `.area-jogo`). A cada pergunta carregada (`carregarPergunta()`), `sortearPoseMascote()` troca a foto do mascote por uma aleatória entre as 4 em `frontend/img/mascote/`, dando a impressão de que o personagem está em poses diferentes enquanto "fala".
 
 Sessão do aluno persiste em `localStorage` (chave `calculoco_aluno`), guardando `{ id, nome_usuario, turma_id, turma_codigo }`, permitindo voltar direto pro menu em visitas futuras sem logar de novo (o app revalida buscando a turma pelo código salvo).
 
@@ -214,9 +218,9 @@ async function chamarApi(caminho, opcoes = {}) {
 ```
 Erros da API viram `Error` lançado, capturado nos `try/catch` de cada handler e exibido no `<p class="aviso">` correspondente daquela tela.
 
-## 8. Identidade visual / design system (`style.css` + ícones SVG em `index.html`)
+## 8. Identidade visual / design system (`style.css` + `frontend/img/` + ícones SVG em `index.html`)
 
-Tema lúdico (mascote em formato de emblema, paleta viva) pensado para crianças, mas construído como uma identidade de plataforma "de respeito" — sem depender de emojis do sistema operacional (que renderizam de formas inconsistentes entre navegadores/SOs e passam uma impressão amadora). Todo ícone da interface é um SVG de linha próprio, desenhado no próprio código.
+Tema lúdico (mascote macaco oficial, paleta viva) pensado para crianças, mas construído como uma identidade de plataforma "de respeito" — sem depender de emojis do sistema operacional (que renderizam de formas inconsistentes entre navegadores/SOs e passam uma impressão amadora). A logo e o mascote são fotos/ilustrações oficiais fornecidas pelo time (`frontend/img/`); os demais ícones de interface (cadeado, check, voltar, etc.) são SVG de linha próprios, desenhados no próprio código.
 
 Mobile-first e responsivo.
 
@@ -240,9 +244,12 @@ Mobile-first e responsivo.
 
 Um "sol" decorativo fixo (`.sun`) com animação sutil de pulso fica no canto superior da tela em todas as telas, reforçando o clima "dia ensolarado/aventura".
 
-**Ícones (`index.html`)**: um `<svg class="sr-only">` no início do `<body>` concentra todos os `<symbol>` reutilizados via `<use href="#icone-...">` — inclui o emblema da marca (`icone-logo`) e os ícones de linha (cadeado, check, voltar, sair, atualizar, seta, professor e um por contexto de cenário). Centralizar os símbolos assim evita duplicar SVG pela página e mantém a marca consistente entre a tela de login, o cabeçalho e o avatar da tela de jogo.
+**Ícones de linha (`index.html`)**: um `<svg class="sr-only">` no início do `<body>` concentra os `<symbol>` reutilizados via `<use href="#icone-...">` — cadeado, check, voltar, sair, atualizar, seta, professor e um por contexto de cenário. Centralizar os símbolos assim evita duplicar SVG pela página.
 
-**Logo (`icone-logo`, em `index.html`)**: emblema circular desenhado em SVG puro (sem arquivo de imagem externo) — fundo azul-noite com borda amarela, um rosto minimalista construído a partir de formas geométricas simples (círculos para orelhas/cabeça, elipse para o focinho, um traço para o sorriso). Usa as mesmas custom properties de cor da paleta (`var(--azul-noite)`, `var(--amarelo)`, etc.), então qualquer ajuste de paleta se reflete automaticamente na marca. É reaproveitado como logo de login, logo do cabeçalho e avatar do "guia" na tela de jogo — uma única marca em vez de mascote + ícones desencontrados.
+**Imagens oficiais (`frontend/img/`)**:
+- `logo.jpeg`: lockup completo da marca (emblema circular + wordmark "CALCULOCO" + slogan) — usado por inteiro nas telas de login (`.logo-login`, cartões de entrada do aluno e do professor), em tamanho grande o bastante pra ler o wordmark.
+- `logo-icone.jpeg`: recorte quadrado só do emblema circular (sem wordmark), derivado de `logo.jpeg` — usado como ícone pequeno no cabeçalho (`.marca-logo`, 52px, com `border-radius:50%`), onde o lockup completo ficaria ilegível/poluído nesse tamanho.
+- `mascote/1.jpeg` a `mascote/4.jpeg`: o mesmo personagem em 4 poses diferentes (fundo branco, recorte circular via CSS). `sortearPoseMascote()` em `app.js` sorteia uma delas a cada pergunta carregada e atualiza `#img-mascote`, dando a impressão de que o mascote está "vivo" enquanto fala.
 
 ## 9. Variáveis de ambiente (`backend/.env`, não versionado)
 
