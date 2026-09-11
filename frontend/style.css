@@ -210,11 +210,10 @@ body{
 }
 .marca{display:flex; align-items:center; gap:14px;}
 .marca-logo{
-  width:52px;height:52px;
-  border-radius:50%;
-  object-fit:cover;
+  width:58px;height:58px;
+  object-fit:contain;
   flex-shrink:0;
-  filter:drop-shadow(0 4px 0 rgba(18,40,92,0.15));
+  filter:drop-shadow(0 3px 0 rgba(18,40,92,0.15));
 }
 .marca .titulo{
   font-family:var(--font-display);
@@ -502,6 +501,31 @@ footer{
   text-align:center;
 }
 #toast.mostrar{opacity:1; transform:translate(-50%,0);}
+
+/* ===================== CONFETE DE COMEMORAÇÃO ===================== */
+#confete-container{
+  position:fixed;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none;
+  z-index:90;
+}
+.confete{
+  position:absolute;
+  top:-20px;
+  width:10px;height:16px;
+  background:var(--cor, var(--amarelo));
+  border-radius:2px;
+  opacity:0.95;
+  animation: confete-cair var(--duracao, 2s) cubic-bezier(.35,.55,.65,1) var(--atraso, 0s) forwards;
+}
+@keyframes confete-cair{
+  0%{ transform: translateY(0) translateX(0) rotate(0deg); opacity:1; }
+  100%{ transform: translateY(105vh) translateX(var(--deriva, 0px)) rotate(var(--rotacao, 360deg)); opacity:0.25; }
+}
+@media (prefers-reduced-motion: reduce){
+  .confete{ animation: none; display:none; }
+}
 
 @media (max-width:520px){
   .opcoes{grid-template-columns:1fr 1fr;}

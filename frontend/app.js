@@ -21,10 +21,18 @@ const CONTEXTOS_VALIDOS = [
   "casa", "fazenda", "escola", "festa", "mercado", "aquario", "parque", "praia",
 ];
 
+// Pontuação por tentativa até acertar: quanto antes o aluno acerta, mais
+// pontos ganha na fase. Da 4ª tentativa em diante não pontua mais.
+const PONTOS_POR_TENTATIVA = [20, 10, 5];
+
+function calcularPontos(tentativa) {
+  return PONTOS_POR_TENTATIVA[tentativa - 1] || 0;
+}
+
 const estado = {
   turma: null, // { id, codigo, nome_turma, nome_professor }
   aluno: null, // { id, nome_usuario, turma_id }
-  progresso: [], // [{ fase_numero, concluida, acertos, erros }]
+  progresso: [], // [{ fase_numero, concluida, pontos }]
   professor: null, // { id, usuario, nome }
   turmasProfessor: [], // [{ id, codigo, nome_turma, total_alunos, criado_em }]
   fase: {
@@ -33,8 +41,7 @@ const estado = {
     nivel: null,
     questionToken: null,
     respondida: false,
-    acertosSessao: 0,
-    errosSessao: 0,
+    tentativas: 0,
   },
 };
 
@@ -367,7 +374,6 @@ function renderizarDesempenho(alunos) {
   corpoTabelaDesempenho.innerHTML = alunos
     .map((aluno) => {
       const percentualProgresso = Math.round((aluno.fases_concluidas / aluno.total_fases) * 100);
-      const percentualAcerto = aluno.percentual_acerto === null ? "—" : `${aluno.percentual_acerto}%`;
 
       return `
         <tr>
@@ -380,9 +386,7 @@ function renderizarDesempenho(alunos) {
               <span class="barra-progresso-texto">${aluno.fases_concluidas}/${aluno.total_fases}</span>
             </div>
           </td>
-          <td>${aluno.acertos}</td>
-          <td>${aluno.erros}</td>
-          <td>${percentualAcerto}</td>
+          <td>${aluno.pontuacao_total}</td>
         </tr>
       `;
     })
@@ -508,6 +512,64 @@ const opcoesResposta = document.getElementById("opcoes-resposta");
 const textoFeedback = document.getElementById("texto-feedback");
 const btnContinuarJogo = document.getElementById("btn-continuar-jogo");
 const btnTentarNovamente = document.getElementById("btn-tentar-novamente");
+const confeteContainer = document.getElementById("confete-container");
+
+/* ===================== CONFETE E SOM DE COMEMORAÇÃO ===================== */
+
+const CORES_CONFETE = [
+  "var(--amarelo)", "var(--laranja)", "var(--rosa)",
+  "var(--verde)", "var(--azul-ceu)", "var(--roxo)",
+];
+
+function dispararConfete() {
+  const quantidade = 40;
+  for (let i = 0; i < quantidade; i++) {
+    const pedaco = document.createElement("span");
+    pedaco.className = "confete";
+    pedaco.style.left = `${Math.random() * 100}%`;
+    pedaco.style.setProperty("--cor", CORES_CONFETE[Math.floor(Math.random() * CORES_CONFETE.length)]);
+    pedaco.style.setProperty("--atraso", `${(Math.random() * 0.3).toFixed(2)}s`);
+    pedaco.style.setProperty("--duracao", `${(1.6 + Math.random() * 0.9).toFixed(2)}s`);
+    pedaco.style.setProperty("--rotacao", `${Math.round(Math.random() * 720 - 360)}deg`);
+    pedaco.style.setProperty("--deriva", `${Math.round(Math.random() * 160 - 80)}px`);
+    pedaco.addEventListener("animationend", () => pedaco.remove());
+    confeteContainer.appendChild(pedaco);
+  }
+}
+
+let audioCtxComemoracao;
+
+// Sintetiza um "tim-tim-tim-tããã" (arpejo maior C-E-G-C) via Web Audio API —
+// sem depender de nenhum arquivo de áudio externo.
+function tocarSomComemoracao() {
+  try {
+    audioCtxComemoracao =
+      audioCtxComemoracao || new (window.AudioContext || window.webkitAudioContext)();
+    const contexto = audioCtxComemoracao;
+    const agora = contexto.currentTime;
+    const notas = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+
+    notas.forEach((frequencia, indice) => {
+      const oscilador = contexto.createOscillator();
+      const ganho = contexto.createGain();
+      const inicio = agora + indice * 0.11;
+      const fim = inicio + 0.24;
+
+      oscilador.type = "triangle";
+      oscilador.frequency.value = frequencia;
+      ganho.gain.setValueAtTime(0.0001, inicio);
+      ganho.gain.linearRampToValueAtTime(0.25, inicio + 0.02);
+      ganho.gain.exponentialRampToValueAtTime(0.0001, fim);
+
+      oscilador.connect(ganho);
+      ganho.connect(contexto.destination);
+      oscilador.start(inicio);
+      oscilador.stop(fim + 0.02);
+    });
+  } catch {
+    // Web Audio indisponível neste navegador — segue sem som.
+  }
+}
 
 function aplicarCenario(contexto) {
   const tema = CONTEXTOS_VALIDOS.includes(contexto) ? contexto : "casa";
@@ -536,8 +598,7 @@ async function abrirFase(numeroFase) {
     nivel,
     questionToken: null,
     respondida: false,
-    acertosSessao: 0,
-    errosSessao: 0,
+    tentativas: 0,
   };
 
   mostrarTela("tela-jogo");
@@ -553,6 +614,7 @@ async function carregarPergunta() {
   btnContinuarJogo.classList.add("oculto");
   btnTentarNovamente.classList.add("oculto");
   estado.fase.respondida = false;
+  estado.fase.tentativas += 1;
   sortearPoseMascote();
 
   try {
@@ -594,17 +656,20 @@ async function responder(indiceEscolhido, botaoClicado) {
     botoes[resultado.correctIndex].classList.add("correta");
 
     if (resultado.correta) {
-      textoFeedback.textContent = "Muito bem, você acertou!";
+      const pontosGanhos = calcularPontos(estado.fase.tentativas);
+      textoFeedback.textContent =
+        pontosGanhos > 0
+          ? `Muito bem, você acertou! +${pontosGanhos} pontos`
+          : "Muito bem, você acertou!";
       textoFeedback.className = "feedback ok";
-      estado.fase.acertosSessao += 1;
-      await salvarProgressoFase(true);
+      dispararConfete();
+      tocarSomComemoracao();
+      await salvarProgressoFase(pontosGanhos);
       btnContinuarJogo.classList.remove("oculto");
     } else {
       botaoClicado.classList.add("errada");
       textoFeedback.textContent = "Não foi dessa vez, tente novamente.";
       textoFeedback.className = "feedback erro";
-      estado.fase.errosSessao += 1;
-      await salvarProgressoFase(false);
       btnTentarNovamente.classList.remove("oculto");
     }
   } catch (erro) {
@@ -614,16 +679,15 @@ async function responder(indiceEscolhido, botaoClicado) {
   }
 }
 
-async function salvarProgressoFase(concluida) {
+async function salvarProgressoFase(pontos) {
   try {
     await chamarApi("/progresso", {
       method: "POST",
       body: JSON.stringify({
         aluno_id: estado.aluno.id,
         fase_numero: estado.fase.numero,
-        concluida,
-        acertos: estado.fase.acertosSessao,
-        erros: estado.fase.errosSessao,
+        concluida: true,
+        pontos,
       }),
     });
     await carregarProgresso();
