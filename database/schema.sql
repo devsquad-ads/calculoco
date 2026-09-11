@@ -26,10 +26,6 @@ create table if not exists turmas (
   criado_em timestamptz not null default now()
 );
 
--- Caso esteja atualizando um banco já existente (criado antes da tabela
--- "professores"), esta linha adiciona a coluna sem apagar dados:
-alter table turmas add column if not exists professor_id uuid references professores(id) on delete set null;
-
 -- Alunos vinculados a uma turma. O PIN nunca é salvo em texto puro,
 -- apenas o hash (bcrypt) gerado pelo backend.
 create table if not exists alunos (
@@ -53,12 +49,6 @@ create table if not exists progresso (
   atualizado_em timestamptz not null default now(),
   unique (aluno_id, fase_numero)
 );
-
--- Caso esteja atualizando um banco já existente (criado antes da pontuação
--- por tentativas substituir os contadores de acertos/erros):
-alter table progresso add column if not exists pontos integer not null default 0;
-alter table progresso drop column if exists acertos;
-alter table progresso drop column if exists erros;
 
 create index if not exists idx_alunos_turma on alunos (turma_id);
 create index if not exists idx_progresso_aluno on progresso (aluno_id);
