@@ -30,8 +30,8 @@ calculoco/
 │   ├── style.css        # design system completo (cores, tipografia, componentes)
 │   ├── app.js            # toda a lógica: estado, chamadas à API, renderização, navegação
 │   └── img/
-│       ├── logo.jpeg          # lockup completo da marca (login)
-│       ├── logo-icone.jpeg    # recorte só do emblema, pro cabeçalho
+│       ├── logo.jpeg          # original fornecido pelo time (fundo branco), só como referência
+│       ├── logo.png           # logo.jpeg com o fundo removido — é este que a interface usa
 │       └── mascote/1.jpeg..4.jpeg  # 4 poses do mascote, sorteadas a cada pergunta
 ├── backend/
 │   ├── server.js               # bootstrap do Express, monta as rotas, serve o frontend estático
@@ -94,8 +94,7 @@ Arquivo: `database/schema.sql`. O script é **idempotente**: usa `create table i
 | aluno_id | uuid, FK → alunos.id, on delete cascade | |
 | fase_numero | integer, not null | 1 a 20 (ver seção 5 sobre numeração de fases); constraint `unique(aluno_id, fase_numero)` — uma linha por combinação aluno+fase |
 | concluida | boolean, default false | true quando o aluno acerta a pergunta daquela fase |
-| acertos | integer, default 0 | acumulado de respostas certas naquela fase (o aluno pode tentar de novo em caso de erro) |
-| erros | integer, default 0 | idem para respostas erradas |
+| pontos | integer, default 0 | pontuação ganha ao acertar, conforme a tentativa (ver seção 5) |
 | atualizado_em | timestamptz | atualizado a cada upsert |
 
 Índices em `alunos.turma_id`, `progresso.aluno_id`, `turmas.professor_id`.
@@ -118,6 +117,7 @@ Arquivo: `database/schema.sql`. O script é **idempotente**: usa `create table i
   }
   ```
 - **Desbloqueio sequencial**: a fase N só é jogável se a fase N-1 estiver com `concluida = true` (a fase 1 é sempre liberada). Essa checagem é feita no frontend, olhando o array `progresso` carregado do backend.
+- **Pontuação por tentativa**: cada vez que o aluno erra e clica em "tentar novamente", uma nova pergunta é gerada para a mesma fase (`carregarPergunta()` incrementa `estado.fase.tentativas`). Ao acertar, os pontos ganhos dependem de quantas perguntas ele precisou até acertar: 1ª tentativa = 20 pontos, 2ª = 10, 3ª = 5, 4ª em diante = 0. A regra vive em `calcularPontos()` (`frontend/app.js`) e é validada no backend (`PONTOS_POSSIVEIS` em `routes/progresso.js`, que só aceita `0, 5, 10 ou 20`). O valor sobrescreve (não soma) o `pontos` daquela fase a cada nova conclusão — o mesmo modelo "última tentativa registrada" que já valia para `concluida`.
 
 ### Geração de perguntas (`backend/utils/perguntas.js`)
 
@@ -165,13 +165,13 @@ Prefixo comum: `/api`. Todas as respostas são JSON; erros seguem o formato `{ e
 |---|---|---|---|
 | POST | `/api/turmas` | `{ nome_turma, professor_id }` | Cria uma turma **vinculada a um professor autenticado** (exige `professor_id` válido). Gera um código numérico de 4 dígitos único (retry loop de até 10 tentativas checando colisão no banco). |
 | GET | `/api/turmas/:codigo` | — | Busca turma pelo código de 4 dígitos (usado pela tela do aluno para validar o código digitado). |
-| GET | `/api/turmas/:turma_id/desempenho?professor_id=...` | query `professor_id` | **Dashboard**: retorna a turma + lista de alunos com resumo de desempenho de cada um (`fases_concluidas`, `total_fases` fixo em 20, `acertos`, `erros`, `percentual_acerto`). **Autorização**: compara `turma.professor_id` com o `professor_id` da query; se não bater, retorna 403. Não há sessão/JWT — a autorização depende do frontend enviar o `professor_id` correto (guardado em `localStorage` após login). |
+| GET | `/api/turmas/:turma_id/desempenho?professor_id=...` | query `professor_id` | **Dashboard**: retorna a turma + lista de alunos com resumo de desempenho de cada um (`fases_concluidas`, `total_fases` fixo em 20, `pontuacao_total`), **já ordenada por `pontuacao_total` decrescente** (maior pontuação primeiro). **Autorização**: compara `turma.professor_id` com o `professor_id` da query; se não bater, retorna 403. Não há sessão/JWT — a autorização depende do frontend enviar o `professor_id` correto (guardado em `localStorage` após login). |
 
 ### `routes/progresso.js`
 | Método | Rota | Body | Descrição |
 |---|---|---|---|
-| GET | `/api/progresso/:aluno_id` | — | Lista todas as linhas de progresso daquele aluno (`fase_numero, concluida, acertos, erros`), ordenado por `fase_numero`. |
-| POST | `/api/progresso` | `{ aluno_id, fase_numero, concluida, acertos, erros }` | Upsert (on conflict `aluno_id,fase_numero`) — grava/atualiza o progresso daquela fase. |
+| GET | `/api/progresso/:aluno_id` | — | Lista todas as linhas de progresso daquele aluno (`fase_numero, concluida, pontos`), ordenado por `fase_numero`. |
+| POST | `/api/progresso` | `{ aluno_id, fase_numero, concluida, pontos }` | Upsert (on conflict `aluno_id,fase_numero`) — grava/atualiza o progresso daquela fase. `pontos` só aceita `0, 5, 10 ou 20`. |
 
 ### `routes/fases.js`
 | Método | Rota | Body | Descrição |
@@ -190,14 +190,14 @@ O app é uma **SPA simples de uma página só**: todas as "telas" são `<section
 1. **`tela-turma`** (tela inicial): campo para digitar o código de 4 dígitos da turma. Botão "Sou professor(a)" leva para o fluxo do professor.
 2. **`tela-auth`**: após validar o código da turma, o aluno escolhe entre abas "Entrar" / "Criar conta", informando `nome_usuario` + PIN de 4 dígitos.
 3. **`tela-menu`**: grade de cartões, um por módulo (`.cartao-modulo`), cada um mostrando seus 5 níveis como botões (`.nivel-btn`) — bloqueados (ícone de cadeado), concluídos (ícone de check) ou disponíveis (número do nível), conforme a lógica de desbloqueio sequencial.
-4. **`tela-jogo`**: mostra o enunciado num balão de fala ao lado de uma foto do mascote (avatar circular, `#img-mascote`), 4 botões de alternativa, feedback visual (verde=certo, vermelho=errado), e troca o **cenário de fundo** (gradiente + ícones SVG decorativos) conforme o campo `contexto` retornado pela API (classes `.tema-casa`, `.tema-mercado`, etc. em `.area-jogo`). A cada pergunta carregada (`carregarPergunta()`), `sortearPoseMascote()` troca a foto do mascote por uma aleatória entre as 4 em `frontend/img/mascote/`, dando a impressão de que o personagem está em poses diferentes enquanto "fala".
+4. **`tela-jogo`**: mostra o enunciado num balão de fala ao lado de uma foto do mascote (avatar circular, `#img-mascote`), 4 botões de alternativa, feedback visual (verde=certo, vermelho=errado, com os pontos ganhos no texto), e troca o **cenário de fundo** (gradiente + ícones SVG decorativos) conforme o campo `contexto` retornado pela API (classes `.tema-casa`, `.tema-mercado`, etc. em `.area-jogo`). A cada pergunta carregada (`carregarPergunta()`), `sortearPoseMascote()` troca a foto do mascote por uma aleatória entre as 4 em `frontend/img/mascote/`, dando a impressão de que o personagem está em poses diferentes enquanto "fala". Ao acertar, `dispararConfete()` solta confete caindo pela tela (CSS puro, `#confete-container`) e `tocarSomComemoracao()` sintetiza um pequeno arpejo de comemoração via Web Audio API (sem depender de nenhum arquivo de áudio).
 
 Sessão do aluno persiste em `localStorage` (chave `calculoco_aluno`), guardando `{ id, nome_usuario, turma_id, turma_codigo }`, permitindo voltar direto pro menu em visitas futuras sem logar de novo (o app revalida buscando a turma pelo código salvo).
 
 ### Fluxo do PROFESSOR
 1. **`tela-professor-auth`**: abas "Entrar"/"Criar conta" — cadastro pede nome completo + usuário + senha; login só usuário + senha.
 2. **`tela-professor-turmas`** ("Minhas turmas"): formulário para criar nova turma (só pede o nome da turma — o professor já está autenticado) + grade de cartões clicáveis, um por turma (nome, código, contagem de alunos).
-3. **`tela-professor-dashboard`**: ao clicar numa turma, mostra uma tabela com uma linha por aluno: nome, barra de progresso visual (X/20 fases concluídas), acertos, erros, % de acerto.
+3. **`tela-professor-dashboard`**: ao clicar numa turma, mostra uma tabela com uma linha por aluno: nome, barra de progresso visual (X/20 fases concluídas) e pontuação total — já vem ordenada da maior para a menor pontuação (o backend ordena, o frontend só renderiza na ordem recebida).
 
 Sessão do professor persiste em `localStorage` (chave `calculoco_professor`), guardando `{ id, usuario, nome }`.
 
@@ -247,8 +247,8 @@ Um "sol" decorativo fixo (`.sun`) com animação sutil de pulso fica no canto su
 **Ícones de linha (`index.html`)**: um `<svg class="sr-only">` no início do `<body>` concentra os `<symbol>` reutilizados via `<use href="#icone-...">` — cadeado, check, voltar, sair, atualizar, seta, professor e um por contexto de cenário. Centralizar os símbolos assim evita duplicar SVG pela página.
 
 **Imagens oficiais (`frontend/img/`)**:
-- `logo.jpeg`: lockup completo da marca (emblema circular + wordmark "CALCULOCO" + slogan) — usado por inteiro nas telas de login (`.logo-login`, cartões de entrada do aluno e do professor), em tamanho grande o bastante pra ler o wordmark.
-- `logo-icone.jpeg`: recorte quadrado só do emblema circular (sem wordmark), derivado de `logo.jpeg` — usado como ícone pequeno no cabeçalho (`.marca-logo`, 52px, com `border-radius:50%`), onde o lockup completo ficaria ilegível/poluído nesse tamanho.
+- `logo.jpeg`: arquivo original fornecido pelo time (lockup completo da marca — emblema circular + wordmark "CALCULOCO" + slogan — com fundo branco opaco). Mantido no repositório como referência/fonte, mas não é referenciado direto no HTML.
+- `logo.png`: o mesmo lockup, com o fundo branco removido (recorte por flood-fill a partir das bordas + borda anti-serrilhada, redimensionado para 420×420) — é essa versão transparente que aparece em toda a interface: `.logo-login` nas telas de login e `.marca-logo` no cabeçalho. Usar sempre a logo completa (nunca um recorte só do emblema) mesmo no ícone pequeno do cabeçalho.
 - `mascote/1.jpeg` a `mascote/4.jpeg`: o mesmo personagem em 4 poses diferentes (fundo branco, recorte circular via CSS). `sortearPoseMascote()` em `app.js` sorteia uma delas a cada pergunta carregada e atualiza `#img-mascote`, dando a impressão de que o mascote está "vivo" enquanto fala.
 
 ## 9. Variáveis de ambiente (`backend/.env`, não versionado)
@@ -277,7 +277,7 @@ Vêm da Declaração de Escopo e do Termo de Abertura do Projeto (TAP) já elabo
 - **Sem autenticação por sessão/JWT real**: tanto aluno quanto professor "logados" apenas guardam seus IDs no `localStorage` do navegador, e o frontend reenvia esses IDs em cada requisição (`aluno_id`, `professor_id`) para o backend confiar neles. Não há token de sessão assinado nem expiração de login — quem souber/adivinhar um `professor_id` (UUID) poderia, em teoria, chamar a API do dashboard diretamente. É um nível de segurança aceitável para um projeto acadêmico, mas **não é apropriado para produção real** sem evoluir para JWT ou sessões de verdade.
 - Sem recuperação de senha (nem para aluno, nem para professor).
 - Sem rate limiting nas rotas de login/cadastro (vulnerável a força bruta em teoria).
-- O dashboard do professor mostra só o **total agregado** de fases concluídas/acertos/erros por aluno — não quebra por módulo/operação (ex: não dá pra ver "esse aluno vai mal especificamente em divisão"). Foi cogitado como próximo passo.
+- O dashboard do professor mostra só o **total agregado** de fases concluídas/pontuação por aluno — não quebra por módulo/operação (ex: não dá pra ver "esse aluno vai mal especificamente em divisão"). Foi cogitado como próximo passo.
 - Sem testes automatizados (unitários ou e2e) até o momento.
 
 ## 12. Convenções de estilo de código a seguir em novas contribuições

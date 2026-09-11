@@ -19,7 +19,7 @@ Jogo educativo web para crianças praticarem as quatro operações básicas de m
 ### Professor
 1. Na tela inicial, o professor toca em **"Sou professor(a)"** e cria uma conta própria (usuário + senha) ou faz login.
 2. Ao entrar, vê a lista de **turmas que ele mesmo criou**, com um formulário para criar novas turmas (cada uma recebe um código de 4 dígitos gerado automaticamente).
-3. Ao clicar em uma turma, vê um **dashboard de desempenho**: para cada aluno, quantas fases já foram concluídas (de 20), total de acertos/erros e o percentual de acerto.
+3. Ao clicar em uma turma, vê um **dashboard de desempenho**: para cada aluno, quantas fases já foram concluídas (de 20) e a pontuação total — a lista já vem ordenada da maior para a menor pontuação.
 
 Tudo — professores, turmas, contas de aluno e progresso — fica salvo no **Supabase**. Cada professor só enxerga as turmas que ele próprio criou (o backend valida isso a cada requisição do dashboard).
 
