@@ -19,7 +19,7 @@ Jogo educativo web para crianças praticarem as quatro operações básicas de m
 ### Professor
 1. Na tela inicial, o professor toca em **"Sou professor(a)"** e cria uma conta própria (usuário + senha) ou faz login.
 2. Ao entrar, vê a lista de **turmas que ele mesmo criou**, com um formulário para criar novas turmas (cada uma recebe um código de 4 dígitos gerado automaticamente).
-3. Ao clicar em uma turma, vê um **dashboard de desempenho**: para cada aluno, quantas fases já foram concluídas (de 20) e a pontuação total — a lista já vem ordenada da maior para a menor pontuação.
+3. Ao clicar em uma turma, vê um **dashboard de desempenho**: para cada aluno, quantas fases já foram concluídas (de 20) e a pontuação total — a lista já vem ordenada da maior para a menor pontuação. Também pode **redefinir a senha de um aluno** (pede confirmação antes) caso ele a esqueça — a nova senha vira o código da turma.
 
 Tudo — professores, turmas, contas de aluno e progresso — fica salvo no **Supabase**. Cada professor só enxerga as turmas que ele próprio criou (o backend valida isso a cada requisição do dashboard).
 
@@ -95,6 +95,7 @@ A resposta correta **nunca** é enviada em texto aberto para o navegador. O back
 | `GET /api/professores/:professor_id/turmas` | Lista as turmas criadas por esse professor, com contagem de alunos |
 | `POST /api/turmas` | Cria uma turma `{ nome_turma, professor_id }` (exige professor autenticado) |
 | `GET /api/turmas/:turma_id/desempenho?professor_id=...` | Dashboard: progresso de cada aluno da turma (só o professor dono da turma pode acessar) |
+| `POST /api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin` | Redefine o PIN do aluno para o código da turma `{ professor_id }` |
 
 ## 7. Próximos passos sugeridos
 

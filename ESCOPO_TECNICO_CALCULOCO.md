@@ -167,6 +167,7 @@ Prefixo comum: `/api`. Todas as respostas são JSON; erros seguem o formato `{ e
 | POST | `/api/turmas` | `{ nome_turma, professor_id }` | Cria uma turma **vinculada a um professor autenticado** (exige `professor_id` válido). Gera um código numérico de 4 dígitos único (retry loop de até 10 tentativas checando colisão no banco). |
 | GET | `/api/turmas/:codigo` | — | Busca turma pelo código de 4 dígitos (usado pela tela do aluno para validar o código digitado). |
 | GET | `/api/turmas/:turma_id/desempenho?professor_id=...` | query `professor_id` | **Dashboard**: retorna a turma + lista de alunos com resumo de desempenho de cada um (`fases_concluidas`, `total_fases` fixo em 20, `pontuacao_total`), **já ordenada por `pontuacao_total` decrescente** (maior pontuação primeiro). **Autorização**: compara `turma.professor_id` com o `professor_id` da query; se não bater, retorna 403. Não há sessão/JWT — a autorização depende do frontend enviar o `professor_id` correto (guardado em `localStorage` após login). |
+| POST | `/api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin` | `{ professor_id }` | Redefine o PIN do aluno para o **código da turma** — usado pelo professor quando o aluno esquece a senha. Mesma checagem de autorização do dashboard (só o professor dono da turma). Devolve `{ ok, novo_pin }`. |
 
 ### `routes/progresso.js`
 | Método | Rota | Body | Descrição |
@@ -198,7 +199,7 @@ Sessão do aluno persiste em `localStorage` (chave `calculoco_aluno`), guardando
 ### Fluxo do PROFESSOR
 1. **`tela-professor-auth`**: abas "Entrar"/"Criar conta" — cadastro pede nome completo + usuário + senha; login só usuário + senha.
 2. **`tela-professor-turmas`** ("Minhas turmas"): formulário para criar nova turma (só pede o nome da turma — o professor já está autenticado) + grade de cartões clicáveis, um por turma (nome, código, contagem de alunos).
-3. **`tela-professor-dashboard`**: ao clicar numa turma, mostra uma tabela com uma linha por aluno: nome, barra de progresso visual (X/20 fases concluídas) e pontuação total (número + ícone de estrela) — já vem ordenada da maior para a menor pontuação (o backend ordena, o frontend só renderiza na ordem recebida).
+3. **`tela-professor-dashboard`**: ao clicar numa turma, mostra uma tabela com uma linha por aluno: nome, barra de progresso visual (X/20 fases concluídas), pontuação total (número + ícone de estrela) e um botão "Redefinir" (senha). Já vem ordenada da maior para a menor pontuação (o backend ordena, o frontend só renderiza na ordem recebida). O botão de redefinir pede confirmação (`window.confirm`, avisando qual vai ser a nova senha) antes de chamar a API — a nova senha (PIN) do aluno passa a ser o código da turma.
 
 Sessão do professor persiste em `localStorage` (chave `calculoco_professor`), guardando `{ id, usuario, nome }`.
 
@@ -277,7 +278,7 @@ Vêm da Declaração de Escopo e do Termo de Abertura do Projeto (TAP) já elabo
 ## 11. Limitações conhecidas / dívidas técnicas atuais
 
 - **Sem autenticação por sessão/JWT real**: tanto aluno quanto professor "logados" apenas guardam seus IDs no `localStorage` do navegador, e o frontend reenvia esses IDs em cada requisição (`aluno_id`, `professor_id`) para o backend confiar neles. Não há token de sessão assinado nem expiração de login — quem souber/adivinhar um `professor_id` (UUID) poderia, em teoria, chamar a API do dashboard diretamente. É um nível de segurança aceitável para um projeto acadêmico, mas **não é apropriado para produção real** sem evoluir para JWT ou sessões de verdade.
-- Sem recuperação de senha (nem para aluno, nem para professor).
+- Sem recuperação de senha do professor. O aluno tem uma saída indireta: o professor pode redefinir o PIN dele para o código da turma (`POST /api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin`), mas o aluno não tem um fluxo de "esqueci minha senha" próprio.
 - Sem rate limiting nas rotas de login/cadastro (vulnerável a força bruta em teoria).
 - O dashboard do professor mostra só o **total agregado** de fases concluídas/pontuação por aluno — não quebra por módulo/operação (ex: não dá pra ver "esse aluno vai mal especificamente em divisão"). Foi cogitado como próximo passo.
 - Sem testes automatizados (unitários ou e2e) até o momento.
