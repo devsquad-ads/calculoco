@@ -124,6 +124,15 @@
         <path d="M2 16c2-2.6 4-2.6 6 0s4 2.6 6 0 4-2.6 6 0" fill="none" stroke="currentColor" stroke-width="1.6"
           stroke-linecap="round"></path>
       </symbol>
+
+      <symbol id="icone-som" viewBox="0 0 24 24">
+        <path d="M4 9v6h4l5 4V5L8 9H4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">
+        </path>
+        <path d="M16.3 8.7a5 5 0 010 6.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        </path>
+        <path d="M18.8 6.2a8.5 8.5 0 010 11.6" fill="none" stroke="currentColor" stroke-width="1.7"
+          stroke-linecap="round"></path>
+      </symbol>
     </defs>
   </svg>
 
@@ -337,6 +346,11 @@
       <div class="linha-mascote">
         <div class="mascote" aria-hidden="true"><img id="img-mascote" src="img/mascote/1.jpeg" alt=""></div>
         <div class="balao-fala">
+          <button type="button" class="btn-ouvir" id="btn-ouvir-enunciado" aria-label="Ouvir a pergunta em voz alta">
+            <svg class="icone-inline" aria-hidden="true">
+              <use href="#icone-som"></use>
+            </svg>
+          </button>
           <p class="enunciado" id="texto-enunciado">Carregando pergunta...</p>
         </div>
       </div>
@@ -366,4 +380,4 @@
   <script src="app.js" type="module"></script>
 </body>
 
-</html>
+</html>

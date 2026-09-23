@@ -520,6 +520,7 @@ function renderizarGradeFases() {
 }
 
 document.getElementById("btn-voltar-menu").addEventListener("click", () => {
+  if (sintetizadorVoz) sintetizadorVoz.cancel();
   mostrarTela("tela-menu");
 });
 
@@ -550,6 +551,61 @@ const btnContinuarJogo = document.getElementById("btn-continuar-jogo");
 const btnTentarNovamente = document.getElementById("btn-tentar-novamente");
 const confeteContainer = document.getElementById("confete-container");
 
+/* ===================== LEITURA EM VOZ ALTA (TTS) ===================== */
+
+const btnOuvirEnunciado = document.getElementById("btn-ouvir-enunciado");
+const sintetizadorVoz = window.speechSynthesis || null;
+let vozPortugues = null;
+
+function escolherVozPortugues() {
+  if (!sintetizadorVoz) return null;
+  const vozes = sintetizadorVoz.getVoices();
+  if (!vozes.length) return null;
+  // Prioriza uma voz pt-BR; se não houver, aceita qualquer pt.
+  return (
+    vozes.find((v) => v.lang === "pt-BR") ||
+    vozes.find((v) => v.lang && v.lang.startsWith("pt")) ||
+    null
+  );
+}
+
+if (sintetizadorVoz) {
+  vozPortugues = escolherVozPortugues();
+  // Em muitos navegadores a lista de vozes carrega de forma assíncrona.
+  sintetizadorVoz.addEventListener("voiceschanged", () => {
+    vozPortugues = escolherVozPortugues();
+  });
+} else if (btnOuvirEnunciado) {
+  // Navegador sem suporte a Web Speech API: esconde o botão em vez de
+  // deixar uma funcionalidade quebrada visível.
+  btnOuvirEnunciado.classList.add("oculto");
+}
+
+function falarEnunciado() {
+  if (!sintetizadorVoz) return;
+  const texto = textoEnunciado.textContent.trim();
+  if (!texto) return;
+
+  sintetizadorVoz.cancel(); // interrompe qualquer fala anterior antes de começar
+
+  const fala = new SpeechSynthesisUtterance(texto);
+  fala.lang = "pt-BR";
+  if (vozPortugues) fala.voice = vozPortugues;
+  fala.rate = 0.95;
+  fala.pitch = 1.15; // levemente mais aguda, combinando com o mascote
+  fala.volume = 1;
+
+  fala.onstart = () => btnOuvirEnunciado.classList.add("falando");
+  fala.onend = () => btnOuvirEnunciado.classList.remove("falando");
+  fala.onerror = () => btnOuvirEnunciado.classList.remove("falando");
+
+  sintetizadorVoz.speak(fala);
+}
+
+if (btnOuvirEnunciado) {
+  btnOuvirEnunciado.addEventListener("click", falarEnunciado);
+}
+
 /* ===================== CONFETE E SOM DE COMEMORAÇÃO ===================== */
 
 const CORES_CONFETE = [
@@ -575,15 +631,15 @@ function dispararConfete() {
   }
 }
 
-let audioCtxComemoracao;
+let audioCtxEfeitos;
 
 // Sintetiza um "tim-tim-tim-tããã" (arpejo maior C-E-G-C) via Web Audio API —
 // sem depender de nenhum arquivo de áudio externo.
 function tocarSomComemoracao() {
   try {
-    audioCtxComemoracao =
-      audioCtxComemoracao || new (window.AudioContext || window.webkitAudioContext)();
-    const contexto = audioCtxComemoracao;
+    audioCtxEfeitos =
+      audioCtxEfeitos || new (window.AudioContext || window.webkitAudioContext)();
+    const contexto = audioCtxEfeitos;
     const agora = contexto.currentTime;
     const notas = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
 
@@ -597,6 +653,39 @@ function tocarSomComemoracao() {
       oscilador.frequency.value = frequencia;
       ganho.gain.setValueAtTime(0.0001, inicio);
       ganho.gain.linearRampToValueAtTime(0.25, inicio + 0.02);
+      ganho.gain.exponentialRampToValueAtTime(0.0001, fim);
+
+      oscilador.connect(ganho);
+      ganho.connect(contexto.destination);
+      oscilador.start(inicio);
+      oscilador.stop(fim + 0.02);
+    });
+  } catch {
+    // Web Audio indisponível neste navegador — segue sem som.
+  }
+}
+
+// Sintetiza um "bum-bu" curto e grave para o feedback de resposta errada —
+// duas notas descendentes e dissonantes, o suficiente para soar "errado"
+// sem ser desagradável para uma criança ouvir várias vezes seguidas.
+function tocarSomErro() {
+  try {
+    audioCtxEfeitos =
+      audioCtxEfeitos || new (window.AudioContext || window.webkitAudioContext)();
+    const contexto = audioCtxEfeitos;
+    const agora = contexto.currentTime;
+    const notas = [246.94, 196.0]; // B3 -> G3, descendente
+
+    notas.forEach((frequencia, indice) => {
+      const oscilador = contexto.createOscillator();
+      const ganho = contexto.createGain();
+      const inicio = agora + indice * 0.13;
+      const fim = inicio + 0.22;
+
+      oscilador.type = "sawtooth";
+      oscilador.frequency.value = frequencia;
+      ganho.gain.setValueAtTime(0.0001, inicio);
+      ganho.gain.linearRampToValueAtTime(0.16, inicio + 0.015);
       ganho.gain.exponentialRampToValueAtTime(0.0001, fim);
 
       oscilador.connect(ganho);
@@ -645,6 +734,10 @@ async function abrirFase(numeroFase) {
 }
 
 async function carregarPergunta() {
+  if (sintetizadorVoz) {
+    sintetizadorVoz.cancel();
+    if (btnOuvirEnunciado) btnOuvirEnunciado.classList.remove("falando");
+  }
   textoEnunciado.textContent = "Carregando pergunta...";
   opcoesResposta.innerHTML = "";
   textoFeedback.textContent = "";
@@ -708,6 +801,7 @@ async function responder(indiceEscolhido, botaoClicado) {
       botaoClicado.classList.add("errada");
       textoFeedback.textContent = "Não foi dessa vez, tente novamente.";
       textoFeedback.className = "feedback erro";
+      tocarSomErro();
       btnTentarNovamente.classList.remove("oculto");
     }
   } catch (erro) {
