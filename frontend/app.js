@@ -613,16 +613,33 @@ const btnOuvirEnunciado = document.getElementById("btn-ouvir-enunciado");
 const sintetizadorVoz = window.speechSynthesis || null;
 let vozPortugues = null;
 
+const PREFERENCIAS_VOZ = [
+  { busca: /thalita/i, pitch: 1.12, rate: 1.06 },
+  { busca: /francisca/i, pitch: 1.15, rate: 1.06 },
+  { busca: /google.*portugu[eê]s.*brasil/i, pitch: 1.2, rate: 1.05 },
+  { busca: /luciana/i, pitch: 1.15, rate: 1.02 },
+  { busca: /natural|neural|online|enhanced|premium|aprimorad/i, pitch: 1.1, rate: 1.05 },
+];
+const AJUSTE_VOZ_PADRAO = { pitch: 1.05, rate: 1.0 };
+
 function escolherVozPortugues() {
   if (!sintetizadorVoz) return null;
-  const vozes = sintetizadorVoz.getVoices();
+  const vozes = sintetizadorVoz.getVoices().filter((v) => v.lang && v.lang.startsWith("pt"));
   if (!vozes.length) return null;
-  // Prioriza uma voz pt-BR; se não houver, aceita qualquer pt.
-  return (
-    vozes.find((v) => v.lang === "pt-BR") ||
-    vozes.find((v) => v.lang && v.lang.startsWith("pt")) ||
-    null
-  );
+  const vozesBrasil = vozes.filter((v) => v.lang.replace("_", "-") === "pt-BR");
+  const candidatas = vozesBrasil.length ? vozesBrasil : vozes;
+
+  for (const preferencia of PREFERENCIAS_VOZ) {
+    const voz = candidatas.find((v) => preferencia.busca.test(v.name));
+    if (voz) return { voz, pitch: preferencia.pitch, rate: preferencia.rate };
+  }
+
+  const voz = candidatas.find((v) => !v.localService) || candidatas[0];
+  return { voz, ...AJUSTE_VOZ_PADRAO };
+}
+
+function dividirEmFrases(texto) {
+  return (texto.match(/[^.!?]+[.!?]*/g) || [texto]).map((f) => f.trim()).filter(Boolean);
 }
 
 if (sintetizadorVoz) {
@@ -644,27 +661,35 @@ function falarEnunciado() {
 
   sintetizadorVoz.cancel(); // interrompe qualquer fala anterior antes de começar
 
-  const fala = new SpeechSynthesisUtterance(texto);
-  fala.lang = "pt-BR";
-  if (vozPortugues) fala.voice = vozPortugues;
-  fala.rate = 0.95;
-  fala.pitch = 1.15; // levemente mais aguda, combinando com o mascote
-  fala.volume = 1;
+  if (!vozPortugues) vozPortugues = escolherVozPortugues();
+  const ajuste = vozPortugues || AJUSTE_VOZ_PADRAO;
+  const frases = dividirEmFrases(texto);
 
-  fala.onstart = () => {
-    btnOuvirEnunciado.classList.add("falando");
-    abaixarMusica(true);
-  };
-  fala.onend = () => {
-    btnOuvirEnunciado.classList.remove("falando");
-    abaixarMusica(false);
-  };
-  fala.onerror = () => {
+  const terminar = () => {
     btnOuvirEnunciado.classList.remove("falando");
     abaixarMusica(false);
   };
 
-  sintetizadorVoz.speak(fala);
+  frases.forEach((frase, indice) => {
+    const fala = new SpeechSynthesisUtterance(frase);
+    const pergunta = frase.endsWith("?");
+    fala.lang = "pt-BR";
+    if (vozPortugues) fala.voice = vozPortugues.voz;
+    fala.rate = ajuste.rate;
+    fala.pitch = Math.min(2, ajuste.pitch + (pergunta ? 0.08 : 0));
+    fala.volume = 1;
+
+    if (indice === 0) {
+      fala.onstart = () => {
+        btnOuvirEnunciado.classList.add("falando");
+        abaixarMusica(true);
+      };
+    }
+    if (indice === frases.length - 1) fala.onend = terminar;
+    fala.onerror = terminar;
+
+    sintetizadorVoz.speak(fala);
+  });
 }
 
 if (btnOuvirEnunciado) {
