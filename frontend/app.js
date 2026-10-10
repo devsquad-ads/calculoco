@@ -485,9 +485,7 @@ const saudacao = document.getElementById("saudacao");
 const gradeFases = document.getElementById("grade-fases");
 
 async function entrarNoMenu() {
-  saudacao.textContent = alunoConvidado()
-    ? "Olá! Jogando sem login"
-    : `Olá, ${estado.aluno.nome_usuario}!`;
+  saudacao.textContent = alunoConvidado() ? "Olá!" : `Olá, ${estado.aluno.nome_usuario}!`;
   document.getElementById("texto-btn-sair").textContent = alunoConvidado() ? "Início" : "Sair";
   await carregarProgresso();
   renderizarGradeFases();
