@@ -614,13 +614,17 @@ const sintetizadorVoz = window.speechSynthesis || null;
 let vozPortugues = null;
 
 const PREFERENCIAS_VOZ = [
-  { busca: /thalita/i, pitch: 1.12, rate: 1.06 },
-  { busca: /francisca/i, pitch: 1.15, rate: 1.06 },
+  { busca: /(julio|antonio|nicolau|fabio|donato|valerio|humberto|macerio).*(natural|online)/i, pitch: 1.08, rate: 1.02 },
+  { busca: /thalita.*(natural|online)/i, pitch: 1.12, rate: 1.06 },
+  { busca: /francisca.*(natural|online)/i, pitch: 1.15, rate: 1.06 },
   { busca: /google.*portugu[eê]s.*brasil/i, pitch: 1.2, rate: 1.05 },
-  { busca: /luciana/i, pitch: 1.15, rate: 1.02 },
-  { busca: /natural|neural|online|enhanced|premium|aprimorad/i, pitch: 1.1, rate: 1.05 },
+  { busca: /natural|neural|enhanced|premium|aprimorad/i, pitch: 1.1, rate: 1.05 },
 ];
-const AJUSTE_VOZ_PADRAO = { pitch: 1.05, rate: 1.0 };
+
+function atualizarBotaoOuvir() {
+  if (!btnOuvirEnunciado) return;
+  btnOuvirEnunciado.classList.toggle("oculto", !vozPortugues);
+}
 
 function escolherVozPortugues() {
   if (!sintetizadorVoz) return null;
@@ -634,8 +638,7 @@ function escolherVozPortugues() {
     if (voz) return { voz, pitch: preferencia.pitch, rate: preferencia.rate };
   }
 
-  const voz = candidatas.find((v) => !v.localService) || candidatas[0];
-  return { voz, ...AJUSTE_VOZ_PADRAO };
+  return null;
 }
 
 function dividirEmFrases(texto) {
@@ -647,12 +650,10 @@ if (sintetizadorVoz) {
   // Em muitos navegadores a lista de vozes carrega de forma assíncrona.
   sintetizadorVoz.addEventListener("voiceschanged", () => {
     vozPortugues = escolherVozPortugues();
+    atualizarBotaoOuvir();
   });
-} else if (btnOuvirEnunciado) {
-  // Navegador sem suporte a Web Speech API: esconde o botão em vez de
-  // deixar uma funcionalidade quebrada visível.
-  btnOuvirEnunciado.classList.add("oculto");
 }
+atualizarBotaoOuvir();
 
 function falarEnunciado() {
   if (!sintetizadorVoz) return;
@@ -662,7 +663,8 @@ function falarEnunciado() {
   sintetizadorVoz.cancel(); // interrompe qualquer fala anterior antes de começar
 
   if (!vozPortugues) vozPortugues = escolherVozPortugues();
-  const ajuste = vozPortugues || AJUSTE_VOZ_PADRAO;
+  if (!vozPortugues) return;
+  const ajuste = vozPortugues;
   const frases = dividirEmFrases(texto);
 
   const terminar = () => {
@@ -674,7 +676,7 @@ function falarEnunciado() {
     const fala = new SpeechSynthesisUtterance(frase);
     const pergunta = frase.endsWith("?");
     fala.lang = "pt-BR";
-    if (vozPortugues) fala.voice = vozPortugues.voz;
+    fala.voice = vozPortugues.voz;
     fala.rate = ajuste.rate;
     fala.pitch = Math.min(2, ajuste.pitch + (pergunta ? 0.08 : 0));
     fala.volume = 1;
