@@ -109,6 +109,14 @@ formTurma.addEventListener("submit", async (e) => {
   }
 });
 
+document.getElementById("btn-ir-creditos").addEventListener("click", () => {
+  mostrarTela("tela-creditos");
+});
+
+document.getElementById("btn-voltar-creditos").addEventListener("click", () => {
+  mostrarTela("tela-turma");
+});
+
 document.getElementById("btn-jogar-sem-login").addEventListener("click", entrarComoConvidado);
 
 const formNovaTurma = document.getElementById("form-nova-turma");

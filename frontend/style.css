@@ -74,13 +74,13 @@ body{
 }
 
 /* ===================== TELAS DE CARTÃO CENTRAL (turma / auth) ===================== */
-#tela-turma, #tela-auth, #tela-professor-auth{
+#tela-turma, #tela-auth, #tela-professor-auth, #tela-creditos{
   display:none;
   align-items:center;
   justify-content:center;
   padding:24px;
 }
-#tela-turma.ativa, #tela-auth.ativa, #tela-professor-auth.ativa{display:flex;}
+#tela-turma.ativa, #tela-auth.ativa, #tela-professor-auth.ativa, #tela-creditos.ativa{display:flex;}
 
 .cartao-login{
   background:var(--branco);
@@ -198,6 +198,50 @@ body{
 .btn-linha:focus-visible{outline:3px solid var(--azul-noite); outline-offset:2px;}
 #btn-trocar-turma{margin-top:18px; width:100%;}
 .btn-ir-professor{margin-top:18px; width:100%;}
+
+.btn-texto{
+  margin-top:14px;
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:14px;
+  color:#5C6D95;
+  background:none;
+  border:none;
+  padding:6px 10px;
+  cursor:pointer;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+.btn-texto:hover{color:var(--azul-noite);}
+.btn-texto:focus-visible{outline:3px solid var(--azul-noite); outline-offset:2px; border-radius:8px;}
+
+.lista-creditos{
+  list-style:none;
+  margin:0 0 22px;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.lista-creditos li{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  background:#EEF2FB;
+  border-radius:14px;
+  padding:12px 14px;
+}
+.nome-credito{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:16px;
+  color:var(--azul-noite);
+}
+.papel-credito{
+  font-weight:700;
+  font-size:13px;
+  color:#5C6D95;
+}
 
 .dica-convidado{
   font-weight:700;
