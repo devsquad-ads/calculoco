@@ -72,6 +72,7 @@ async function chamarApi(caminho, opcoes = {}) {
 function mostrarTela(id) {
   document.querySelectorAll(".tela").forEach((t) => t.classList.remove("ativa"));
   document.getElementById(id).classList.add("ativa");
+  document.body.classList.toggle("em-jogo", id === "tela-jogo");
 }
 
 let toastTimer;
@@ -973,6 +974,7 @@ async function abrirFase(numeroFase) {
     tentativas: 0,
   };
 
+  document.getElementById("cenario-modulo").dataset.modulo = String(modulo.numero);
   mostrarTela("tela-jogo");
   pillFase.textContent = `${modulo.operacao} · Nível ${nivel} de 5`;
   await carregarPergunta();
