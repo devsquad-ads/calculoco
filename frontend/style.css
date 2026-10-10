@@ -609,6 +609,29 @@ footer{
 }
 #toast.mostrar{opacity:1; transform:translate(-50%,0);}
 
+/* ===================== BOTÃO DE MÚSICA ===================== */
+.btn-musica{
+  position:fixed;
+  left:16px; bottom:16px;
+  width:52px; height:52px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  border:2px solid rgba(18,40,92,0.15);
+  background:var(--branco);
+  color:var(--azul-noite);
+  box-shadow:0 5px 0 rgba(18,40,92,0.18);
+  cursor:pointer;
+  z-index:70;
+  transition:transform .12s ease, background .15s ease, color .15s ease;
+}
+.btn-musica .icone-inline{width:24px; height:24px;}
+.btn-musica:hover{transform:translateY(-2px);}
+.btn-musica:active{transform:translateY(2px); box-shadow:0 2px 0 rgba(18,40,92,0.18);}
+.btn-musica:focus-visible{outline:3px solid var(--azul-noite); outline-offset:3px;}
+.btn-musica.desligada{background:#E4E9F4; color:#7A8AB0;}
+
 /* ===================== CONFETE DE COMEMORAÇÃO ===================== */
 #confete-container{
   position:fixed;

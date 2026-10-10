@@ -652,9 +652,18 @@ function falarEnunciado() {
   fala.pitch = 1.15; // levemente mais aguda, combinando com o mascote
   fala.volume = 1;
 
-  fala.onstart = () => btnOuvirEnunciado.classList.add("falando");
-  fala.onend = () => btnOuvirEnunciado.classList.remove("falando");
-  fala.onerror = () => btnOuvirEnunciado.classList.remove("falando");
+  fala.onstart = () => {
+    btnOuvirEnunciado.classList.add("falando");
+    abaixarMusica(true);
+  };
+  fala.onend = () => {
+    btnOuvirEnunciado.classList.remove("falando");
+    abaixarMusica(false);
+  };
+  fala.onerror = () => {
+    btnOuvirEnunciado.classList.remove("falando");
+    abaixarMusica(false);
+  };
 
   sintetizadorVoz.speak(fala);
 }
@@ -754,6 +763,187 @@ function tocarSomErro() {
     // Web Audio indisponível neste navegador — segue sem som.
   }
 }
+
+/* ===================== MÚSICA AMBIENTE ===================== */
+
+const CHAVE_MUSICA = "calculoco_musica";
+const btnMusica = document.getElementById("btn-musica");
+
+const ACORDES_MUSICA = [
+  [261.63, 329.63, 392.0],
+  [196.0, 246.94, 293.66],
+  [220.0, 261.63, 329.63],
+  [174.61, 220.0, 261.63],
+];
+const NOTAS_MELODIA = [523.25, 587.33, 659.25, 783.99, 880.0];
+const PADRAO_ARPEJO = [0, 1, 2, 1, 0, 1, 2, 1];
+const BATIDAS_POR_MINUTO = 104;
+const DURACAO_TEMPO = 60 / BATIDAS_POR_MINUTO;
+const DURACAO_ACORDE = DURACAO_TEMPO * 4;
+const VOLUME_MUSICA = 0.07;
+
+let musicaLigada = lerPreferenciaMusica();
+let saidaMusica = null;
+let timerMusica = null;
+let proximoAcorde = 0;
+let indiceAcorde = 0;
+
+function lerPreferenciaMusica() {
+  try {
+    return localStorage.getItem(CHAVE_MUSICA) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function salvarPreferenciaMusica() {
+  try {
+    localStorage.setItem(CHAVE_MUSICA, musicaLigada ? "1" : "0");
+  } catch {}
+}
+
+function obterContextoAudio() {
+  audioCtxEfeitos =
+    audioCtxEfeitos || new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtxEfeitos;
+}
+
+function tocarNotaMusica(frequencia, inicio, duracao, volume, tipo, ataque = 0.02) {
+  const contexto = audioCtxEfeitos;
+  const oscilador = contexto.createOscillator();
+  const ganho = contexto.createGain();
+
+  oscilador.type = tipo;
+  oscilador.frequency.value = frequencia;
+  ganho.gain.setValueAtTime(0.0001, inicio);
+  ganho.gain.linearRampToValueAtTime(volume, inicio + ataque);
+  ganho.gain.exponentialRampToValueAtTime(0.0001, inicio + duracao);
+
+  oscilador.connect(ganho);
+  ganho.connect(saidaMusica.entrada);
+  oscilador.start(inicio);
+  oscilador.stop(inicio + duracao + 0.05);
+}
+
+function agendarMusica() {
+  if (!saidaMusica) return;
+  const contexto = audioCtxEfeitos;
+
+  while (proximoAcorde < contexto.currentTime + DURACAO_ACORDE) {
+    const acorde = ACORDES_MUSICA[indiceAcorde % ACORDES_MUSICA.length];
+    const inicio = proximoAcorde;
+
+    acorde.forEach((frequencia) =>
+      tocarNotaMusica(frequencia, inicio, DURACAO_ACORDE + 0.4, 0.06, "sine", 0.4)
+    );
+
+    tocarNotaMusica(acorde[0] / 2, inicio, DURACAO_TEMPO * 1.4, 0.32, "sine", 0.01);
+    tocarNotaMusica(acorde[2] / 2, inicio + DURACAO_TEMPO * 2, DURACAO_TEMPO * 1.4, 0.26, "sine", 0.01);
+
+    PADRAO_ARPEJO.forEach((indiceNota, passo) => {
+      const nota = acorde[indiceNota] * 2;
+      const volume = passo % 2 === 0 ? 0.09 : 0.06;
+      tocarNotaMusica(nota, inicio + passo * (DURACAO_TEMPO / 2), 0.35, volume, "triangle", 0.008);
+    });
+
+    [0, 1.5, 2, 3].forEach((tempo) => {
+      if (Math.random() < 0.55) {
+        const nota = NOTAS_MELODIA[Math.floor(Math.random() * NOTAS_MELODIA.length)];
+        tocarNotaMusica(nota, inicio + tempo * DURACAO_TEMPO, DURACAO_TEMPO * 1.2, 0.08, "sine", 0.02);
+      }
+    });
+
+    proximoAcorde += DURACAO_ACORDE;
+    indiceAcorde += 1;
+  }
+}
+
+function iniciarMusica() {
+  if (saidaMusica) return;
+  let contexto;
+  try {
+    contexto = obterContextoAudio();
+  } catch {
+    return;
+  }
+  if (contexto.state === "suspended") contexto.resume();
+
+  const filtro = contexto.createBiquadFilter();
+  filtro.type = "lowpass";
+  filtro.frequency.value = 2200;
+
+  const volume = contexto.createGain();
+  volume.gain.setValueAtTime(0.0001, contexto.currentTime);
+  volume.gain.linearRampToValueAtTime(VOLUME_MUSICA, contexto.currentTime + 2.5);
+
+  filtro.connect(volume);
+  volume.connect(contexto.destination);
+
+  saidaMusica = { entrada: filtro, volume };
+  proximoAcorde = contexto.currentTime + 0.1;
+  agendarMusica();
+  timerMusica = setInterval(agendarMusica, 1000);
+}
+
+function pararMusica() {
+  if (!saidaMusica) return;
+  const contexto = audioCtxEfeitos;
+  const { volume } = saidaMusica;
+
+  clearInterval(timerMusica);
+  timerMusica = null;
+  saidaMusica = null;
+
+  volume.gain.cancelScheduledValues(contexto.currentTime);
+  volume.gain.setValueAtTime(volume.gain.value, contexto.currentTime);
+  volume.gain.linearRampToValueAtTime(0.0001, contexto.currentTime + 0.6);
+  setTimeout(() => volume.disconnect(), 800);
+}
+
+function abaixarMusica(abaixar) {
+  if (!saidaMusica) return;
+  const contexto = audioCtxEfeitos;
+  const alvo = abaixar ? VOLUME_MUSICA * 0.3 : VOLUME_MUSICA;
+  saidaMusica.volume.gain.cancelScheduledValues(contexto.currentTime);
+  saidaMusica.volume.gain.setTargetAtTime(alvo, contexto.currentTime, 0.25);
+}
+
+function atualizarBotaoMusica() {
+  const rotulo = musicaLigada ? "Desligar música" : "Ligar música";
+  btnMusica.classList.toggle("desligada", !musicaLigada);
+  btnMusica.setAttribute("aria-pressed", String(musicaLigada));
+  btnMusica.setAttribute("aria-label", rotulo);
+  btnMusica.title = rotulo;
+  btnMusica
+    .querySelector("use")
+    .setAttribute("href", musicaLigada ? "#icone-musica" : "#icone-musica-off");
+}
+
+btnMusica.addEventListener("click", () => {
+  musicaLigada = !musicaLigada;
+  salvarPreferenciaMusica();
+  atualizarBotaoMusica();
+  if (musicaLigada) iniciarMusica();
+  else pararMusica();
+});
+
+function destravarMusica(evento) {
+  if (btnMusica.contains(evento.target)) return;
+  document.removeEventListener("pointerdown", destravarMusica, true);
+  document.removeEventListener("keydown", destravarMusica, true);
+  if (musicaLigada) iniciarMusica();
+}
+
+document.addEventListener("pointerdown", destravarMusica, true);
+document.addEventListener("keydown", destravarMusica, true);
+
+document.addEventListener("visibilitychange", () => {
+  if (!audioCtxEfeitos) return;
+  if (document.hidden) audioCtxEfeitos.suspend();
+  else audioCtxEfeitos.resume();
+});
+
+atualizarBotaoMusica();
 
 function aplicarCenario(contexto) {
   const tema = CONTEXTOS_VALIDOS.includes(contexto) ? contexto : "casa";
