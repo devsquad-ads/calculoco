@@ -11,17 +11,18 @@ Jogo educativo web para crianças praticarem as quatro operações básicas de m
 ## Como funciona o fluxo
 
 ### Aluno
-1. O aluno digita o **código da turma** (4 dígitos, fornecido pelo professor).
-2. Dentro da turma, cria uma conta (nome de usuário + PIN de 4 dígitos) ou faz login se já tiver uma.
-3. No menu, vê **4 módulos** (Adição, Subtração, Multiplicação, Divisão), cada um com **5 níveis** de dificuldade crescente — 20 fases no total. Cada nível só desbloqueia depois que o anterior é concluído.
-4. Cada pergunta é gerada aleatoriamente, com um cenário temático (mercado, escola, fazenda, festa, aquário, parque, praia, casa) que muda o visual da tela.
+1. Na tela inicial, o aluno pode tocar em **"Jogar agora"** para jogar sem login, ou digitar o **código da turma** (4 dígitos, fornecido pelo professor).
+2. Sem login, o progresso fica salvo apenas no `localStorage` do navegador, sem vínculo com turma, professor ou banco de dados.
+3. Com o código da turma, cria uma conta (nome de usuário + PIN de 4 dígitos) ou faz login se já tiver uma; o progresso vai para o Supabase e aparece no dashboard do professor.
+4. No menu, vê **4 módulos** (Adição, Subtração, Multiplicação, Divisão), cada um com **5 níveis** de dificuldade crescente — 20 fases no total. Cada nível só desbloqueia depois que o anterior é concluído.
+5. Cada pergunta é gerada aleatoriamente, com um cenário temático (mercado, escola, fazenda, festa, aquário, parque, praia, casa) que muda o visual da tela.
 
 ### Professor
 1. Na tela inicial, o professor toca em **"Sou professor(a)"** e cria uma conta própria (usuário + senha) ou faz login.
 2. Ao entrar, vê a lista de **turmas que ele mesmo criou**, com um formulário para criar novas turmas (cada uma recebe um código de 4 dígitos gerado automaticamente).
 3. Ao clicar em uma turma, vê um **dashboard de desempenho**: para cada aluno, quantas fases já foram concluídas (de 20) e a pontuação total — a lista já vem ordenada da maior para a menor pontuação. Também pode **redefinir a senha de um aluno** (pede confirmação antes) caso ele a esqueça — a nova senha vira o código da turma.
 
-Tudo — professores, turmas, contas de aluno e progresso — fica salvo no **Supabase**. Cada professor só enxerga as turmas que ele próprio criou (o backend valida isso a cada requisição do dashboard).
+Professores, turmas, contas de aluno e o progresso de quem joga logado ficam salvos no **Supabase**. Cada professor só enxerga as turmas que ele próprio criou (o backend valida isso a cada requisição do dashboard).
 
 ## 1. Configurar o Supabase
 

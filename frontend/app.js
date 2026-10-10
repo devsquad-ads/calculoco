@@ -3,6 +3,7 @@
 const API_URL = "/api";
 const CHAVE_ALUNO = "calculoco_aluno";
 const CHAVE_PROFESSOR = "calculoco_professor";
+const CHAVE_CONVIDADO = "calculoco_convidado";
 
 // Os 4 módulos do jogo (1 para cada operação). Cada módulo tem 5 níveis
 // de dificuldade crescente (fase_numero global = (modulo-1)*5 + nivel).
@@ -38,7 +39,7 @@ function pontosComEstrela(pontos) {
 
 const estado = {
   turma: null, // { id, codigo, nome_turma, nome_professor }
-  aluno: null, // { id, nome_usuario, turma_id }
+  aluno: null, // { id, nome_usuario, turma_id } ou { convidado: true }
   progresso: [], // [{ fase_numero, concluida, pontos }]
   professor: null, // { id, usuario, nome }
   turmasProfessor: [], // [{ id, codigo, nome_turma, total_alunos, criado_em }]
@@ -107,6 +108,8 @@ formTurma.addEventListener("submit", async (e) => {
     avisoTurma.textContent = erro.message;
   }
 });
+
+document.getElementById("btn-jogar-sem-login").addEventListener("click", entrarComoConvidado);
 
 const formNovaTurma = document.getElementById("form-nova-turma");
 const avisoNovaTurma = document.getElementById("aviso-nova-turma");
@@ -183,17 +186,56 @@ formAuth.addEventListener("submit", async (e) => {
 
 function definirAlunoLogado(aluno) {
   estado.aluno = aluno;
+  salvarDadosConvidado({ ...lerDadosConvidado(), ativo: false });
   localStorage.setItem(CHAVE_ALUNO, JSON.stringify({ ...aluno, turma_codigo: estado.turma?.codigo }));
 }
 
 document.getElementById("btn-sair").addEventListener("click", () => {
-  localStorage.removeItem(CHAVE_ALUNO);
+  if (alunoConvidado()) {
+    salvarDadosConvidado({ ...lerDadosConvidado(), ativo: false });
+  } else {
+    localStorage.removeItem(CHAVE_ALUNO);
+  }
   estado.aluno = null;
   estado.turma = null;
   estado.progresso = [];
   campoCodigoTurma.value = "";
   mostrarTela("tela-turma");
 });
+
+/* ===================== JOGO SEM LOGIN ===================== */
+
+function lerDadosConvidado() {
+  try {
+    const dados = JSON.parse(localStorage.getItem(CHAVE_CONVIDADO));
+    return {
+      ativo: !!dados?.ativo,
+      progresso: Array.isArray(dados?.progresso) ? dados.progresso : [],
+    };
+  } catch {
+    return { ativo: false, progresso: [] };
+  }
+}
+
+function salvarDadosConvidado(dados) {
+  try {
+    localStorage.setItem(CHAVE_CONVIDADO, JSON.stringify(dados));
+  } catch {
+    mostrarToast("Não foi possível salvar o progresso neste aparelho.");
+  }
+}
+
+function alunoConvidado() {
+  return !!estado.aluno?.convidado;
+}
+
+async function entrarComoConvidado() {
+  localStorage.removeItem(CHAVE_ALUNO);
+  estado.turma = null;
+  estado.aluno = { convidado: true };
+  salvarDadosConvidado({ ...lerDadosConvidado(), ativo: true });
+  await entrarNoMenu();
+}
 
 /* ===================== ÁREA DO PROFESSOR ===================== */
 
@@ -435,13 +477,20 @@ const saudacao = document.getElementById("saudacao");
 const gradeFases = document.getElementById("grade-fases");
 
 async function entrarNoMenu() {
-  saudacao.textContent = `Olá, ${estado.aluno.nome_usuario}!`;
+  saudacao.textContent = alunoConvidado()
+    ? "Olá! Jogando sem login"
+    : `Olá, ${estado.aluno.nome_usuario}!`;
+  document.getElementById("texto-btn-sair").textContent = alunoConvidado() ? "Início" : "Sair";
   await carregarProgresso();
   renderizarGradeFases();
   mostrarTela("tela-menu");
 }
 
 async function carregarProgresso() {
+  if (alunoConvidado()) {
+    estado.progresso = lerDadosConvidado().progresso;
+    return;
+  }
   try {
     const resultado = await chamarApi(`/progresso/${estado.aluno.id}`);
     estado.progresso = resultado.progresso || [];
@@ -812,6 +861,15 @@ async function responder(indiceEscolhido, botaoClicado) {
 }
 
 async function salvarProgressoFase(pontos) {
+  if (alunoConvidado()) {
+    const dados = lerDadosConvidado();
+    const progresso = dados.progresso.filter((p) => p.fase_numero !== estado.fase.numero);
+    progresso.push({ fase_numero: estado.fase.numero, concluida: true, pontos });
+    progresso.sort((a, b) => a.fase_numero - b.fase_numero);
+    salvarDadosConvidado({ ...dados, progresso });
+    estado.progresso = progresso;
+    return;
+  }
   try {
     await chamarApi("/progresso", {
       method: "POST",
@@ -850,6 +908,12 @@ btnContinuarJogo.addEventListener("click", async () => {
     } catch {
       localStorage.removeItem(CHAVE_ALUNO);
     }
+  }
+
+  if (lerDadosConvidado().ativo) {
+    estado.aluno = { convidado: true };
+    await entrarNoMenu();
+    return;
   }
 
   const professorSalvo = localStorage.getItem(CHAVE_PROFESSOR);

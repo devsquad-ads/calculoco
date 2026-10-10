@@ -145,11 +145,16 @@
       <h1>Bem-vindo ao Calculoco!</h1>
       <p class="sub">Pense · Calcule · Acerte · Divirta-se</p>
 
+      <button type="button" class="btn-grande btn-laranja" id="btn-jogar-sem-login">Jogar agora</button>
+      <p class="dica-convidado">Sem login, seu progresso fica salvo só neste aparelho.</p>
+
+      <div class="divisor"><span>ou entre na sua turma</span></div>
+
       <form id="form-turma">
         <label class="sr-only" for="campo-codigo-turma">Código da turma</label>
         <input type="text" id="campo-codigo-turma" placeholder="Código da turma (ex: 5638)" inputmode="numeric"
           maxlength="4" pattern="\d{4}" autocomplete="off" required>
-        <button type="submit" class="btn-grande btn-laranja" id="btn-entrar-turma">Entrar na turma</button>
+        <button type="submit" class="btn-grande btn-linha-cheia" id="btn-entrar-turma">Entrar na turma</button>
       </form>
       <p class="aviso" id="aviso-turma"></p>
 
@@ -314,7 +319,7 @@
         <svg class="icone-inline" aria-hidden="true">
           <use href="#icone-sair"></use>
         </svg>
-        Sair
+        <span id="texto-btn-sair">Sair</span>
       </button>
     </header>
 
