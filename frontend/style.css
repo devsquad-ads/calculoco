@@ -831,3 +831,12 @@ footer{
   color:#5C6D95;
   padding:30px 20px;
 }
+
+.area-excluir-turma{
+  max-width:900px;
+  margin:0 auto 40px;
+  padding:0 5vw;
+  text-align:right;
+}
+.btn-perigo{color:var(--vermelho-escuro); border-color:rgba(176,31,49,0.25);}
+.btn-perigo:hover{background:#FCE3E7;}

@@ -401,7 +401,10 @@ const corpoTabelaDesempenho = document.getElementById("corpo-tabela-desempenho")
 const tabelaDesempenho = document.getElementById("tabela-desempenho");
 const dashVazio = document.getElementById("dash-vazio");
 
+let turmaDashboard = null;
+
 async function abrirDashboardTurma(turma) {
+  turmaDashboard = turma;
   dashNomeTurma.textContent = turma.nome_turma;
   dashCodigoTurma.textContent = `Código: ${turma.codigo}`;
   corpoTabelaDesempenho.innerHTML = "";
@@ -479,6 +482,29 @@ async function redefinirPinAluno(alunoId, nomeUsuario, turma) {
     mostrarToast(erro.message);
   }
 }
+
+document.getElementById("btn-excluir-turma").addEventListener("click", async () => {
+  const turma = turmaDashboard;
+  if (!turma) return;
+
+  const confirmado = window.confirm(
+    `Excluir a turma "${turma.nome_turma}"?\n\nEla vai sumir da sua lista e os alunos não vão mais conseguir entrar com o código ${turma.codigo}.`
+  );
+  if (!confirmado) return;
+
+  try {
+    await chamarApi(`/turmas/${turma.id}`, {
+      method: "DELETE",
+      body: JSON.stringify({ professor_id: estado.professor.id }),
+    });
+    mostrarToast(`Turma "${turma.nome_turma}" excluída.`);
+    await carregarTurmasProfessor();
+    renderizarListaTurmas();
+    mostrarTela("tela-professor-turmas");
+  } catch (erro) {
+    mostrarToast(erro.message);
+  }
+});
 
 /* ===================== TELA 3: MENU DE MÓDULOS E NÍVEIS ===================== */
 

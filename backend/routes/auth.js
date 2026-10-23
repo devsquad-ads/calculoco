@@ -26,6 +26,7 @@ router.post("/cadastro", async (req, res) => {
     .from("turmas")
     .select("id")
     .eq("codigo", codigo_turma)
+    .is("excluida_em", null)
     .maybeSingle();
 
   if (erroTurma) return res.status(500).json({ erro: erroTurma.message });
@@ -75,6 +76,7 @@ router.post("/login", async (req, res) => {
     .from("turmas")
     .select("id")
     .eq("codigo", codigo_turma)
+    .is("excluida_em", null)
     .maybeSingle();
 
   if (!turma) return res.status(404).json({ erro: "Código de turma não encontrado." });

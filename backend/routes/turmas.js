@@ -72,6 +72,7 @@ router.get("/:codigo", async (req, res) => {
     .from("turmas")
     .select("id, codigo, nome_turma, nome_professor")
     .eq("codigo", codigo)
+    .is("excluida_em", null)
     .maybeSingle();
 
   if (error) return res.status(500).json({ erro: error.message });
@@ -91,6 +92,7 @@ router.get("/:turma_id/desempenho", async (req, res) => {
     .from("turmas")
     .select("id, codigo, nome_turma, professor_id")
     .eq("id", turma_id)
+    .is("excluida_em", null)
     .maybeSingle();
 
   if (erroTurma) return res.status(500).json({ erro: erroTurma.message });
@@ -158,6 +160,7 @@ router.post("/:turma_id/alunos/:aluno_id/redefinir-pin", async (req, res) => {
     .from("turmas")
     .select("id, codigo, professor_id")
     .eq("id", turma_id)
+    .is("excluida_em", null)
     .maybeSingle();
 
   if (erroTurma) return res.status(500).json({ erro: erroTurma.message });
@@ -186,6 +189,35 @@ router.post("/:turma_id/alunos/:aluno_id/redefinir-pin", async (req, res) => {
 
   if (error) return res.status(500).json({ erro: error.message });
   res.json({ ok: true, novo_pin: turma.codigo });
+});
+
+// DELETE /api/turmas/:turma_id  { professor_id }
+// Exclusão lógica: só marca excluida_em, alunos e progresso continuam no banco.
+router.delete("/:turma_id", async (req, res) => {
+  const { turma_id } = req.params;
+  const { professor_id } = req.body || {};
+
+  const { data: turma, error: erroTurma } = await supabase
+    .from("turmas")
+    .select("id, professor_id")
+    .eq("id", turma_id)
+    .is("excluida_em", null)
+    .maybeSingle();
+
+  if (erroTurma) return res.status(500).json({ erro: erroTurma.message });
+  if (!turma) return res.status(404).json({ erro: "Turma não encontrada." });
+
+  if (!professor_id || turma.professor_id !== professor_id) {
+    return res.status(403).json({ erro: "Você não tem permissão para excluir esta turma." });
+  }
+
+  const { error } = await supabase
+    .from("turmas")
+    .update({ excluida_em: new Date().toISOString() })
+    .eq("id", turma_id);
+
+  if (error) return res.status(500).json({ erro: error.message });
+  res.json({ ok: true });
 });
 
 module.exports = router;

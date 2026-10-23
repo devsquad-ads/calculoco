@@ -1,0 +1,13 @@
+{
+  "name": "calculoco-testes",
+  "private": true,
+  "description": "Testes automatizados do Calculoco (backend com node:test e navegador com Playwright). Não faz parte do deploy.",
+  "scripts": {
+    "test": "node --test \"unidade/**/*.test.js\"",
+    "test:e2e": "playwright test",
+    "test:tudo": "npm test && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.49.1"
+  }
+}

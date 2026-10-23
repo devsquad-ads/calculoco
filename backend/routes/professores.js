@@ -80,7 +80,8 @@ router.post("/login", async (req, res) => {
 });
 
 // GET /api/professores/:professor_id/turmas
-// Lista as turmas criadas por esse professor, com a contagem de alunos de cada uma.
+// Lista as turmas criadas por esse professor (exceto as excluídas), com a
+// contagem de alunos de cada uma.
 router.get("/:professor_id/turmas", async (req, res) => {
   const { professor_id } = req.params;
 
@@ -88,6 +89,7 @@ router.get("/:professor_id/turmas", async (req, res) => {
     .from("turmas")
     .select("id, codigo, nome_turma, criado_em")
     .eq("professor_id", professor_id)
+    .is("excluida_em", null)
     .order("criado_em", { ascending: false });
 
   if (error) return res.status(500).json({ erro: error.message });

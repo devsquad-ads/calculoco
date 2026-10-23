@@ -50,6 +50,9 @@ create table if not exists progresso (
   unique (aluno_id, fase_numero)
 );
 
+-- Exclusão lógica de turma (preenchida pelo backend, a linha nunca é apagada).
+alter table turmas add column if not exists excluida_em timestamptz;
+
 create index if not exists idx_alunos_turma on alunos (turma_id);
 create index if not exists idx_progresso_aluno on progresso (aluno_id);
 create index if not exists idx_turmas_professor on turmas (professor_id);

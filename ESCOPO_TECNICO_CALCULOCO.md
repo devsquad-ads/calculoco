@@ -78,6 +78,7 @@ Arquivo: `database/schema.sql`. O script é **idempotente**: usa `create table i
 | nome_professor | text, not null | denormalizado (nome do professor no momento da criação, para exibição rápida) |
 | professor_id | uuid, FK → professores.id, on delete set null | dono da turma; usado para checar permissão no dashboard |
 | criado_em | timestamptz | |
+| excluida_em | timestamptz, null | **exclusão lógica**: preenchido quando o professor exclui a turma. Toda consulta de turma no backend filtra `excluida_em is null`; a linha, os alunos e o progresso nunca são apagados. O código de uma turma excluída não é reaproveitado (continua ocupando o `unique`). |
 
 ### `alunos`
 | coluna | tipo | observação |
@@ -168,6 +169,7 @@ Prefixo comum: `/api`. Todas as respostas são JSON; erros seguem o formato `{ e
 | GET | `/api/turmas/:codigo` | — | Busca turma pelo código de 4 dígitos (usado pela tela do aluno para validar o código digitado). |
 | GET | `/api/turmas/:turma_id/desempenho?professor_id=...` | query `professor_id` | **Dashboard**: retorna a turma + lista de alunos com resumo de desempenho de cada um (`fases_concluidas`, `total_fases` fixo em 20, `pontuacao_total`), **já ordenada por `pontuacao_total` decrescente** (maior pontuação primeiro). **Autorização**: compara `turma.professor_id` com o `professor_id` da query; se não bater, retorna 403. Não há sessão/JWT — a autorização depende do frontend enviar o `professor_id` correto (guardado em `localStorage` após login). |
 | POST | `/api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin` | `{ professor_id }` | Redefine o PIN do aluno para o **código da turma** — usado pelo professor quando o aluno esquece a senha. Mesma checagem de autorização do dashboard (só o professor dono da turma). Devolve `{ ok, novo_pin }`. |
+| DELETE | `/api/turmas/:turma_id` | `{ professor_id }` | **Exclusão lógica** da turma (preenche `excluida_em`, nada é apagado). Só o professor dono pode (403 caso contrário); turma inexistente ou já excluída → 404. Depois disso a turma some da lista do professor e o código passa a responder 404 para login/cadastro de alunos. |
 
 ### `routes/progresso.js`
 | Método | Rota | Body | Descrição |
@@ -281,7 +283,8 @@ Vêm da Declaração de Escopo e do Termo de Abertura do Projeto (TAP) já elabo
 - Sem recuperação de senha do professor. O aluno tem uma saída indireta: o professor pode redefinir o PIN dele para o código da turma (`POST /api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin`), mas o aluno não tem um fluxo de "esqueci minha senha" próprio.
 - Sem rate limiting nas rotas de login/cadastro (vulnerável a força bruta em teoria).
 - O dashboard do professor mostra só o **total agregado** de fases concluídas/pontuação por aluno — não quebra por módulo/operação (ex: não dá pra ver "esse aluno vai mal especificamente em divisão"). Foi cogitado como próximo passo.
-- Sem testes automatizados (unitários ou e2e) até o momento.
+- Testes automatizados ficam em `tests/` (fora do deploy): `npm test` roda os testes do backend (node:test, com um Supabase falso em memória) e `npm run test:e2e` roda os testes de navegador (Playwright, usando o Chrome instalado). Nenhum teste toca no banco real.
+- Uma turma excluída não desloga na hora um aluno que já está com o jogo aberto: ele só é deslogado ao recarregar a página. A rota `POST /api/progresso` também não confere se a turma do aluno foi excluída (mesma limitação de não haver sessão real).
 
 ## 12. Convenções de estilo de código a seguir em novas contribuições
 

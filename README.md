@@ -20,7 +20,7 @@ Jogo educativo web para crianças praticarem as quatro operações básicas de m
 ### Professor
 1. Na tela inicial, o professor toca em **"Sou professor(a)"** e cria uma conta própria (usuário + senha) ou faz login.
 2. Ao entrar, vê a lista de **turmas que ele mesmo criou**, com um formulário para criar novas turmas (cada uma recebe um código de 4 dígitos gerado automaticamente).
-3. Ao clicar em uma turma, vê um **dashboard de desempenho**: para cada aluno, quantas fases já foram concluídas (de 20) e a pontuação total — a lista já vem ordenada da maior para a menor pontuação. Também pode **redefinir a senha de um aluno** (pede confirmação antes) caso ele a esqueça — a nova senha vira o código da turma.
+3. Ao clicar em uma turma, vê um **dashboard de desempenho**: para cada aluno, quantas fases já foram concluídas (de 20) e a pontuação total — a lista já vem ordenada da maior para a menor pontuação. Também pode **redefinir a senha de um aluno** (pede confirmação antes) caso ele a esqueça — a nova senha vira o código da turma — e **excluir a turma** (também com confirmação). A exclusão é lógica: a turma some da lista e o código para de funcionar, mas nada é apagado do banco.
 
 Professores, turmas, contas de aluno e o progresso de quem joga logado ficam salvos no **Supabase**. Cada professor só enxerga as turmas que ele próprio criou (o backend valida isso a cada requisição do dashboard).
 
@@ -97,8 +97,20 @@ A resposta correta **nunca** é enviada em texto aberto para o navegador. O back
 | `POST /api/turmas` | Cria uma turma `{ nome_turma, professor_id }` (exige professor autenticado) |
 | `GET /api/turmas/:turma_id/desempenho?professor_id=...` | Dashboard: progresso de cada aluno da turma (só o professor dono da turma pode acessar) |
 | `POST /api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin` | Redefine o PIN do aluno para o código da turma `{ professor_id }` |
+| `DELETE /api/turmas/:turma_id` | Exclui a turma de forma lógica `{ professor_id }`: some da lista e o código para de funcionar, mas nada é apagado do banco |
 
-## 7. Próximos passos sugeridos
+## 7. Testes
+
+Os testes ficam em `tests/` (não fazem parte do deploy) e usam um Supabase falso em memória — nunca tocam no banco real.
+
+```bash
+cd backend && npm install      # dependências do backend (usadas pelos testes)
+cd ../tests && npm install
+npm test            # backend (node:test)
+npm run test:e2e    # navegador (Playwright, usa o Google Chrome instalado)
+```
+
+## 8. Próximos passos sugeridos
 
 - Adicionar recuperação de senha do professor.
 - Expandir o dashboard com um detalhamento por módulo (não só o total de fases concluídas).
