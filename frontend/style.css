@@ -583,6 +583,13 @@ body.em-jogo .area-jogo{box-shadow:0 20px 40px rgba(18,40,92,0.25);}
   box-shadow:0 3px 0 #C96700;
   animation: pulso-ouvir 0.9s ease-in-out infinite;
 }
+@media (prefers-reduced-motion: no-preference){
+  .linha-mascote.falando .mascote{animation: mascote-fala .5s ease-in-out infinite alternate;}
+}
+@keyframes mascote-fala{
+  from{transform:translateY(0) rotate(-3deg);}
+  to{transform:translateY(-4px) rotate(3deg);}
+}
 @keyframes pulso-ouvir{
   0%,100%{transform:scale(1);}
   50%{transform:scale(1.12);}

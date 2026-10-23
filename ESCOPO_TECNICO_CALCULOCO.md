@@ -183,6 +183,12 @@ Prefixo comum: `/api`. Todas as respostas são JSON; erros seguem o formato `{ e
 | GET | `/api/fases/:numero/questao` | — | `numero` de 1 a 20. Decompõe em módulo/nível, gera a pergunta (ver seção 5), assina o token, retorna `{ enunciado, opcoes, contexto, questionToken }`. |
 | POST | `/api/fases/:numero/verificar` | `{ questionToken, resposta }` | Verifica a resposta contra o token assinado, retorna `{ correta, correctIndex }`. |
 
+### `routes/tts.js` — leitura do enunciado em voz alta
+| Método | Rota | Body | Descrição |
+|---|---|---|---|
+| GET | `/api/tts/status` | — | `{ disponivel }`: se há chave da Azure configurada e o TTS não está pausado. |
+| POST | `/api/tts` | `{ texto, questionToken }` | Devolve o mp3 do enunciado (`pt-BR-AntonioNeural`, tom +12% e ritmo +8% via SSML). Só aceita o texto cujo hash está no `questionToken` (campo `h`, assinado em `fases.js`), para ninguém usar a cota com texto arbitrário. Cache em memória (200 áudios). Se a Azure responder 401/403 (chave inválida ou cota do F0 esgotada) o TTS pausa por 10 min; em 429/5xx, por 30 s. Indisponível → 503, e o frontend usa a voz do navegador. |
+
 ### `GET /api/health`
 Retorna `{ status: "ok" }` — usado só para checagem rápida de que o servidor está de pé.
 
@@ -263,6 +269,9 @@ SUPABASE_URL=https://SEU_PROJETO.supabase.co
 SUPABASE_SERVICE_KEY=sua_service_role_key_aqui   # NUNCA a anon key
 QUESTION_SECRET=string_longa_aleatoria            # segredo do HMAC das perguntas
 PORT=3000
+AZURE_SPEECH_KEY=...                              # opcional: TTS (recurso Speech, plano F0)
+AZURE_SPEECH_REGION=brazilsouth                   # opcional: região do recurso Speech
+AZURE_SPEECH_VOICE=pt-BR-AntonioNeural            # opcional: voz usada
 ```
 
 `server.js` serve o frontend estático (`express.static`) a partir da pasta `frontend/`, então em produção/dev só precisa rodar `npm start` dentro de `backend/` e acessar `http://localhost:3000`.

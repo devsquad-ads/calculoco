@@ -656,7 +656,7 @@ function renderizarGradeFases() {
 }
 
 function voltarAoMenu() {
-  if (sintetizadorVoz) sintetizadorVoz.cancel();
+  pararFala();
   mostrarMenu();
 }
 
@@ -797,9 +797,16 @@ const PREFERENCIAS_VOZ = [
   { busca: /natural|neural|enhanced|premium|aprimorad/i, pitch: 1.1, rate: 1.05 },
 ];
 
+// A voz principal vem do backend (Azure, igual para todo mundo). A voz do
+// navegador só entra quando o servidor não tem TTS configurado ou a cota acabou.
+let ttsServidorDisponivel = false;
+let audioEmCache = { texto: null, buffer: null };
+let fonteAudioFala = null;
+let pedidoFala = 0;
+
 function atualizarBotaoOuvir() {
   if (!btnOuvirEnunciado) return;
-  btnOuvirEnunciado.classList.toggle("oculto", !vozPortugues);
+  btnOuvirEnunciado.classList.toggle("oculto", !ttsServidorDisponivel && !vozPortugues);
 }
 
 function escolherVozPortugues() {
@@ -831,43 +838,121 @@ if (sintetizadorVoz) {
 }
 atualizarBotaoOuvir();
 
-function falarEnunciado() {
-  if (!sintetizadorVoz) return;
-  const texto = textoEnunciado.textContent.trim();
-  if (!texto) return;
+chamarApi("/tts/status")
+  .then(({ disponivel }) => {
+    ttsServidorDisponivel = !!disponivel;
+    atualizarBotaoOuvir();
+  })
+  .catch(() => {});
 
-  sintetizadorVoz.cancel(); // interrompe qualquer fala anterior antes de começar
+function marcarFalando(falando) {
+  btnOuvirEnunciado.classList.toggle("falando", falando);
+  document.querySelector(".linha-mascote").classList.toggle("falando", falando);
+  abaixarMusica(falando);
+}
 
+function pararFala() {
+  pedidoFala += 1;
+  if (fonteAudioFala) {
+    fonteAudioFala.onended = null;
+    try {
+      fonteAudioFala.stop();
+    } catch {}
+    fonteAudioFala = null;
+  }
+  if (sintetizadorVoz) sintetizadorVoz.cancel();
+  marcarFalando(false);
+}
+
+async function buscarAudioServidor(texto, questionToken) {
+  if (!ttsServidorDisponivel) return null;
+  if (audioEmCache.texto === texto) return audioEmCache.buffer;
+
+  try {
+    const resposta = await fetch(`${API_URL}/tts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto, questionToken }),
+    });
+    if (!resposta.ok) {
+      if (resposta.status === 503) {
+        ttsServidorDisponivel = false;
+        atualizarBotaoOuvir();
+      }
+      return null;
+    }
+    const buffer = await obterContextoAudio().decodeAudioData(await resposta.arrayBuffer());
+    audioEmCache = { texto, buffer };
+    return buffer;
+  } catch {
+    return null;
+  }
+}
+
+function tocarAudio(buffer) {
+  const contexto = obterContextoAudio();
+  if (contexto.state === "suspended") contexto.resume();
+
+  const fonte = contexto.createBufferSource();
+  fonte.buffer = buffer;
+  fonte.connect(contexto.destination);
+  fonte.onended = () => {
+    if (fonteAudioFala !== fonte) return;
+    fonteAudioFala = null;
+    marcarFalando(false);
+  };
+  fonteAudioFala = fonte;
+  fonte.start();
+}
+
+function falarComNavegador(texto, pedido) {
   if (!vozPortugues) vozPortugues = escolherVozPortugues();
-  if (!vozPortugues) return;
+  if (!sintetizadorVoz || !vozPortugues) {
+    marcarFalando(false);
+    atualizarBotaoOuvir();
+    mostrarToast("Não foi possível ler a pergunta agora.");
+    return;
+  }
+
   const ajuste = vozPortugues;
   const frases = dividirEmFrases(texto);
-
   const terminar = () => {
-    btnOuvirEnunciado.classList.remove("falando");
-    abaixarMusica(false);
+    if (pedido === pedidoFala) marcarFalando(false);
   };
 
   frases.forEach((frase, indice) => {
     const fala = new SpeechSynthesisUtterance(frase);
     const pergunta = frase.endsWith("?");
     fala.lang = "pt-BR";
-    fala.voice = vozPortugues.voz;
+    fala.voice = ajuste.voz;
     fala.rate = ajuste.rate;
     fala.pitch = Math.min(2, ajuste.pitch + (pergunta ? 0.08 : 0));
     fala.volume = 1;
-
-    if (indice === 0) {
-      fala.onstart = () => {
-        btnOuvirEnunciado.classList.add("falando");
-        abaixarMusica(true);
-      };
-    }
     if (indice === frases.length - 1) fala.onend = terminar;
     fala.onerror = terminar;
-
     sintetizadorVoz.speak(fala);
   });
+}
+
+async function falarEnunciado() {
+  const texto = estado.fase.enunciado;
+  if (!texto) return;
+
+  pararFala();
+  const pedido = pedidoFala;
+  marcarFalando(true);
+
+  // iOS só libera o áudio se o contexto for retomado ainda dentro do clique
+  try {
+    const contexto = obterContextoAudio();
+    if (contexto.state === "suspended") contexto.resume();
+  } catch {}
+
+  const buffer = await buscarAudioServidor(texto, estado.fase.questionToken);
+  if (pedido !== pedidoFala) return;
+
+  if (buffer) tocarAudio(buffer);
+  else falarComNavegador(texto, pedido);
 }
 
 if (btnOuvirEnunciado) {
@@ -1184,10 +1269,8 @@ async function abrirFase(numeroFase) {
 }
 
 async function carregarPergunta() {
-  if (sintetizadorVoz) {
-    sintetizadorVoz.cancel();
-    if (btnOuvirEnunciado) btnOuvirEnunciado.classList.remove("falando");
-  }
+  pararFala();
+  estado.fase.enunciado = null;
   textoEnunciado.textContent = "Carregando pergunta...";
   opcoesResposta.innerHTML = "";
   textoFeedback.textContent = "";
@@ -1201,6 +1284,7 @@ async function carregarPergunta() {
   try {
     const questao = await chamarApi(`/fases/${estado.fase.numero}/questao`);
     estado.fase.questionToken = questao.questionToken;
+    estado.fase.enunciado = questao.enunciado;
     textoEnunciado.textContent = questao.enunciado;
     aplicarCenario(questao.contexto);
     renderizarOpcoes(questao.opcoes);

@@ -8,6 +8,7 @@ const authRouter = require("./routes/auth");
 const progressoRouter = require("./routes/progresso");
 const fasesRouter = require("./routes/fases");
 const professoresRouter = require("./routes/professores");
+const ttsRouter = require("./routes/tts");
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/progresso", progressoRouter);
 app.use("/api/fases", fasesRouter);
 app.use("/api/professores", professoresRouter);
+app.use("/api/tts", ttsRouter);
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 

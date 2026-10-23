@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { gerarQuestao, TOTAL_FASES, NIVEIS_POR_MODULO } = require("../utils/perguntas");
 const { assinarQuestao, verificarToken } = require("../utils/token");
+const { hashTexto } = require("./tts");
 
 // fase 1-5 = adição níveis 1-5, fase 6-10 = subtração níveis 1-5, etc.
 function decompoeFase(numero) {
@@ -28,7 +29,12 @@ router.get("/:numero/questao", (req, res) => {
   }
 
   const { enunciado, opcoes, correctIndex, operacao, contexto } = questao;
-  const questionToken = assinarQuestao({ correctIndex, operacao, fase: numero });
+  const questionToken = assinarQuestao({
+    correctIndex,
+    operacao,
+    fase: numero,
+    h: hashTexto(enunciado),
+  });
 
   res.json({ enunciado, opcoes, contexto, questionToken });
 });

@@ -52,8 +52,18 @@ O servidor sobe em `http://localhost:3000` e **também serve o frontend** (pasta
 O projeto já vem com um `vercel.json` na raiz pronto para isso: o backend (`backend/server.js`) é publicado como uma função serverless (`@vercel/node`) e o frontend (pasta `frontend/`) como arquivos estáticos — os dois no mesmo domínio, sem CORS entre eles.
 
 1. Importe o repositório em [vercel.com/new](https://vercel.com/new).
-2. Em **Project Settings → Environment Variables**, adicione as mesmas três variáveis do `.env` local: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` e `QUESTION_SECRET`. A Vercel **não lê o arquivo `.env`** do repositório (ele nem é versionado) — as variáveis precisam ser cadastradas por lá.
+2. Em **Project Settings → Environment Variables**, adicione as mesmas três variáveis do `.env` local: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` e `QUESTION_SECRET`. A Vercel **não lê o arquivo `.env`** do repositório (ele nem é versionado) — as variáveis precisam ser cadastradas por lá. Para a leitura em voz alta, cadastre também `AZURE_SPEECH_KEY` e `AZURE_SPEECH_REGION` (ver seção 3.1).
 3. Faça o deploy (ou **Redeploy**, se o projeto já existia e só faltavam as variáveis). Não é preciso configurar Build Command nem Output Directory — o `vercel.json` já define as duas partes (função da API + estáticos do frontend).
+
+## 3.1. Leitura do enunciado em voz alta (Azure Speech, plano gratuito)
+
+O botão de som do jogo lê a pergunta com uma voz neural masculina em pt-BR gerada pelo backend, igual em todos os aparelhos. Usamos o plano **Free (F0)** da Azure, que dá 500 mil caracteres por mês (cerca de 4 mil leituras) e **não gera cobrança**: quando a cota acaba, a Azure recusa as requisições até o mês seguinte e o jogo passa a usar a voz do navegador automaticamente.
+
+1. No [portal da Azure](https://portal.azure.com), crie um recurso **Speech** (Serviços de Fala) e, em **Tipo de preço**, escolha **Free F0**.
+2. Em **Chaves e Ponto de Extremidade**, copie a **Chave 1** e a **Região** (ex.: `brazilsouth`).
+3. Cadastre `AZURE_SPEECH_KEY` e `AZURE_SPEECH_REGION` no `.env` local e na Vercel. Opcional: `AZURE_SPEECH_VOICE` para trocar a voz (padrão `pt-BR-AntonioNeural`).
+
+Sem essas variáveis o jogo continua funcionando, só que lendo com a voz do navegador (quando houver uma voz natural instalada).
 
 ## 4. Estrutura de pastas
 
@@ -73,7 +83,8 @@ calculoco/
 │   │   ├── auth.js             # cadastro e login do aluno (usuário + PIN)
 │   │   ├── professores.js      # cadastro e login do professor (usuário + senha), lista de turmas
 │   │   ├── progresso.js        # ler/gravar progresso por fase
-│   │   └── fases.js            # gerar pergunta aleatória e verificar resposta
+│   │   ├── fases.js            # gerar pergunta aleatória e verificar resposta
+│   │   └── tts.js              # áudio do enunciado via Azure Speech (com cache e fallback)
 │   ├── utils/
 │   │   ├── perguntas.js        # gerador de perguntas dos 4 módulos, com dificuldade progressiva
 │   │   └── token.js            # assina/valida a resposta correta sem expor no HTML
