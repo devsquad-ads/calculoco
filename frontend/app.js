@@ -4,6 +4,9 @@ const API_URL = "/api";
 const CHAVE_ALUNO = "calculoco_aluno";
 const CHAVE_PROFESSOR = "calculoco_professor";
 const CHAVE_CONVIDADO = "calculoco_convidado";
+const CHAVE_PROGRESSO_ALUNO = "calculoco_progresso_aluno";
+// sessionStorage: tela em que a aba estava, para voltar nela ao recarregar
+const CHAVE_TELA = "calculoco_tela";
 
 // Os 4 módulos do jogo (1 para cada operação). Cada módulo tem 5 níveis
 // de dificuldade crescente (fase_numero global = (modulo-1)*5 + nivel).
@@ -43,7 +46,7 @@ const estado = {
   aluno: null, // { id, nome_usuario, turma_id } ou { convidado: true }
   progresso: [], // [{ fase_numero, concluida, pontos }]
   professor: null, // { id, usuario, nome }
-  turmasProfessor: [], // [{ id, codigo, nome_turma, total_alunos, criado_em }]
+  turmasProfessor: null, // [{ id, codigo, nome_turma, total_alunos, criado_em }], null = carregando, "erro"
   fase: {
     numero: null,
     modulo: null,
@@ -63,17 +66,31 @@ async function chamarApi(caminho, opcoes = {}) {
   });
   const dados = await resposta.json().catch(() => ({}));
   if (!resposta.ok) {
-    throw new Error(dados.erro || "Ocorreu um erro inesperado.");
+    const erro = new Error(dados.erro || "Ocorreu um erro inesperado.");
+    erro.status = resposta.status;
+    throw erro;
   }
   return dados;
 }
 
+function lerJson(armazenamento, chave) {
+  try {
+    return JSON.parse(armazenamento.getItem(chave));
+  } catch {
+    return null;
+  }
+}
+
 /* ===================== NAVEGAÇÃO ENTRE TELAS ===================== */
 
-function mostrarTela(id) {
+function mostrarTela(id, telaSalva = null) {
   document.querySelectorAll(".tela").forEach((t) => t.classList.remove("ativa"));
   document.getElementById(id).classList.add("ativa");
   document.body.classList.toggle("em-jogo", id === "tela-jogo");
+  try {
+    if (telaSalva) sessionStorage.setItem(CHAVE_TELA, JSON.stringify(telaSalva));
+    else sessionStorage.removeItem(CHAVE_TELA);
+  } catch {}
 }
 
 let toastTimer;
@@ -196,22 +213,29 @@ formAuth.addEventListener("submit", async (e) => {
 
 function definirAlunoLogado(aluno) {
   estado.aluno = aluno;
+  estado.progresso = lerProgressoEmCache(aluno.id);
   salvarDadosConvidado({ ...lerDadosConvidado(), ativo: false });
-  localStorage.setItem(CHAVE_ALUNO, JSON.stringify({ ...aluno, turma_codigo: estado.turma?.codigo }));
+  localStorage.setItem(
+    CHAVE_ALUNO,
+    JSON.stringify({ ...aluno, turma_codigo: estado.turma?.codigo, turma: estado.turma })
+  );
 }
 
-document.getElementById("btn-sair").addEventListener("click", () => {
+function sairAluno() {
   if (alunoConvidado()) {
     salvarDadosConvidado({ ...lerDadosConvidado(), ativo: false });
   } else {
     localStorage.removeItem(CHAVE_ALUNO);
+    localStorage.removeItem(CHAVE_PROGRESSO_ALUNO);
   }
   estado.aluno = null;
   estado.turma = null;
   estado.progresso = [];
   campoCodigoTurma.value = "";
   mostrarTela("tela-turma");
-});
+}
+
+document.getElementById("btn-sair").addEventListener("click", sairAluno);
 
 /* ===================== JOGO SEM LOGIN ===================== */
 
@@ -241,6 +265,7 @@ function alunoConvidado() {
 
 async function entrarComoConvidado() {
   localStorage.removeItem(CHAVE_ALUNO);
+  localStorage.removeItem(CHAVE_PROGRESSO_ALUNO);
   estado.turma = null;
   estado.aluno = { convidado: true };
   salvarDadosConvidado({ ...lerDadosConvidado(), ativo: true });
@@ -321,7 +346,7 @@ function definirProfessorLogado(professor) {
 document.getElementById("prof-btn-sair").addEventListener("click", () => {
   localStorage.removeItem(CHAVE_PROFESSOR);
   estado.professor = null;
-  estado.turmasProfessor = [];
+  estado.turmasProfessor = null;
   mostrarTela("tela-turma");
 });
 
@@ -332,9 +357,10 @@ async function entrarAreaProfessor() {
   profSaudacao.textContent = `Olá, ${estado.professor.nome}!`;
   avisoNovaTurma.textContent = "";
   formNovaTurma.reset();
-  await carregarTurmasProfessor();
+  estado.turmasProfessor = null;
   renderizarListaTurmas();
   mostrarTela("tela-professor-turmas");
+  await atualizarListaTurmas();
 }
 
 async function carregarTurmasProfessor() {
@@ -342,13 +368,27 @@ async function carregarTurmasProfessor() {
     const resultado = await chamarApi(`/professores/${estado.professor.id}/turmas`);
     estado.turmasProfessor = resultado.turmas || [];
   } catch {
-    estado.turmasProfessor = [];
+    if (!estado.turmasProfessor) estado.turmasProfessor = "erro";
   }
+}
+
+async function atualizarListaTurmas() {
+  await carregarTurmasProfessor();
+  renderizarListaTurmas();
 }
 
 function renderizarListaTurmas() {
   listaTurmas.innerHTML = "";
 
+  if (estado.turmasProfessor === null) {
+    listaTurmas.innerHTML = '<p class="aviso-turmas-vazio">Carregando suas turmas...</p>';
+    return;
+  }
+  if (estado.turmasProfessor === "erro") {
+    listaTurmas.innerHTML =
+      '<p class="aviso-turmas-vazio">Não foi possível carregar suas turmas. Tente novamente em instantes.</p>';
+    return;
+  }
   if (estado.turmasProfessor.length === 0) {
     listaTurmas.innerHTML =
       '<p class="aviso-turmas-vazio">Você ainda não criou nenhuma turma. Use o formulário acima para criar a primeira!</p>';
@@ -382,18 +422,16 @@ formNovaTurma.addEventListener("submit", async (e) => {
     avisoNovaTurma.style.color = "var(--verde-escuro)";
     avisoNovaTurma.textContent = `Turma criada! Código: ${turma.codigo}`;
     formNovaTurma.reset();
-    await carregarTurmasProfessor();
-    renderizarListaTurmas();
+    await atualizarListaTurmas();
   } catch (erro) {
     avisoNovaTurma.style.color = "var(--rosa)";
     avisoNovaTurma.textContent = erro.message;
   }
 });
 
-document.getElementById("btn-voltar-turmas").addEventListener("click", async () => {
-  await carregarTurmasProfessor();
-  renderizarListaTurmas();
+document.getElementById("btn-voltar-turmas").addEventListener("click", () => {
   mostrarTela("tela-professor-turmas");
+  atualizarListaTurmas();
 });
 
 const dashNomeTurma = document.getElementById("dash-nome-turma");
@@ -411,7 +449,10 @@ async function abrirDashboardTurma(turma) {
   corpoTabelaDesempenho.innerHTML = "";
   tabelaDesempenho.classList.remove("oculto");
   dashVazio.classList.add("oculto");
-  mostrarTela("tela-professor-dashboard");
+  mostrarTela("tela-professor-dashboard", {
+    tela: "dashboard",
+    turma: { id: turma.id, codigo: turma.codigo, nome_turma: turma.nome_turma },
+  });
 
   try {
     const resultado = await chamarApi(
@@ -499,9 +540,8 @@ document.getElementById("btn-excluir-turma").addEventListener("click", async () 
       body: JSON.stringify({ professor_id: estado.professor.id }),
     });
     mostrarToast(`Turma "${turma.nome_turma}" excluída.`);
-    await carregarTurmasProfessor();
-    renderizarListaTurmas();
     mostrarTela("tela-professor-turmas");
+    await atualizarListaTurmas();
   } catch (erro) {
     mostrarToast(erro.message);
   }
@@ -513,9 +553,13 @@ const saudacao = document.getElementById("saudacao");
 const gradeFases = document.getElementById("grade-fases");
 
 async function entrarNoMenu() {
+  await carregarProgresso();
+  mostrarMenu();
+}
+
+function mostrarMenu() {
   saudacao.textContent = alunoConvidado() ? "Olá!" : `Olá, ${estado.aluno.nome_usuario}!`;
   document.getElementById("texto-btn-sair").textContent = alunoConvidado() ? "Início" : "Sair";
-  await carregarProgresso();
   renderizarGradeFases();
   mostrarTela("tela-menu");
 }
@@ -528,9 +572,18 @@ async function carregarProgresso() {
   try {
     const resultado = await chamarApi(`/progresso/${estado.aluno.id}`);
     estado.progresso = resultado.progresso || [];
+    localStorage.setItem(
+      CHAVE_PROGRESSO_ALUNO,
+      JSON.stringify({ aluno_id: estado.aluno.id, progresso: estado.progresso })
+    );
   } catch {
-    estado.progresso = [];
+    // sem rede: mantém o progresso que já estava carregado
   }
+}
+
+function lerProgressoEmCache(alunoId) {
+  const cache = lerJson(localStorage, CHAVE_PROGRESSO_ALUNO);
+  return cache?.aluno_id === alunoId && Array.isArray(cache.progresso) ? cache.progresso : [];
 }
 
 function faseConcluida(numero) {
@@ -604,8 +657,7 @@ function renderizarGradeFases() {
 
 function voltarAoMenu() {
   if (sintetizadorVoz) sintetizadorVoz.cancel();
-  renderizarGradeFases();
-  mostrarTela("tela-menu");
+  mostrarMenu();
 }
 
 document.getElementById("btn-voltar-menu").addEventListener("click", voltarAoMenu);
@@ -1035,7 +1087,7 @@ async function abrirFase(numeroFase) {
   };
 
   document.getElementById("cenario-modulo").dataset.modulo = String(modulo.numero);
-  mostrarTela("tela-jogo");
+  mostrarTela("tela-jogo", { tela: "jogo", fase: numeroFase });
   pillFase.textContent = `${modulo.operacao} · Nível ${nivel} de 5`;
   await carregarPergunta();
 }
@@ -1168,37 +1220,71 @@ btnMenuFim.addEventListener("click", voltarAoMenu);
 
 /* ===================== INICIALIZAÇÃO ===================== */
 
-(async function iniciar() {
-  const alunoSalvo = localStorage.getItem(CHAVE_ALUNO);
-  if (alunoSalvo) {
-    try {
-      const aluno = JSON.parse(alunoSalvo);
-      const turma = await chamarApi(`/turmas/${aluno.turma_codigo}`);
-      estado.turma = turma;
-      estado.aluno = { id: aluno.id, nome_usuario: aluno.nome_usuario, turma_id: aluno.turma_id };
-      await entrarNoMenu();
-      return;
-    } catch {
-      localStorage.removeItem(CHAVE_ALUNO);
-    }
+// Escolhe a tela só com o que está no localStorage, sem esperar a API.
+// A sessão do aluno é revalidada depois, em segundo plano.
+function iniciar() {
+  const telaSalva = lerJson(sessionStorage, CHAVE_TELA);
+  const alunoSalvo = lerJson(localStorage, CHAVE_ALUNO);
+
+  if (alunoSalvo?.id && alunoSalvo.turma_codigo) {
+    estado.turma = alunoSalvo.turma || { codigo: alunoSalvo.turma_codigo };
+    estado.aluno = { id: alunoSalvo.id, nome_usuario: alunoSalvo.nome_usuario, turma_id: alunoSalvo.turma_id };
+    estado.progresso = lerProgressoEmCache(alunoSalvo.id);
+    abrirTelaDoAluno(telaSalva);
+    revalidarAluno(alunoSalvo);
+    return;
   }
+  localStorage.removeItem(CHAVE_ALUNO);
 
   if (lerDadosConvidado().ativo) {
     estado.aluno = { convidado: true };
-    await entrarNoMenu();
+    estado.progresso = lerDadosConvidado().progresso;
+    abrirTelaDoAluno(telaSalva);
     return;
   }
 
-  const professorSalvo = localStorage.getItem(CHAVE_PROFESSOR);
-  if (professorSalvo) {
-    try {
-      estado.professor = JSON.parse(professorSalvo);
-      await entrarAreaProfessor();
-      return;
-    } catch {
-      localStorage.removeItem(CHAVE_PROFESSOR);
+  const professorSalvo = lerJson(localStorage, CHAVE_PROFESSOR);
+  if (professorSalvo?.id) {
+    estado.professor = professorSalvo;
+    if (telaSalva?.tela === "dashboard" && telaSalva.turma?.id) {
+      profSaudacao.textContent = `Olá, ${estado.professor.nome}!`;
+      abrirDashboardTurma(telaSalva.turma);
+      atualizarListaTurmas();
+    } else {
+      entrarAreaProfessor();
     }
+    return;
   }
+  localStorage.removeItem(CHAVE_PROFESSOR);
 
   mostrarTela("tela-turma");
-})();
+}
+
+function abrirTelaDoAluno(telaSalva) {
+  const fase = telaSalva?.tela === "jogo" ? Number(telaSalva.fase) : null;
+  if (fase >= 1 && fase <= TOTAL_FASES && faseDesbloqueada(fase)) {
+    abrirFase(fase);
+  } else {
+    mostrarMenu();
+  }
+}
+
+async function revalidarAluno(alunoSalvo) {
+  try {
+    const turma = await chamarApi(`/turmas/${alunoSalvo.turma_codigo}`);
+    if (estado.aluno?.id !== alunoSalvo.id) return;
+    estado.turma = turma;
+    localStorage.setItem(CHAVE_ALUNO, JSON.stringify({ ...alunoSalvo, turma }));
+  } catch (erro) {
+    if (erro.status === 404 && estado.aluno?.id === alunoSalvo.id) {
+      sairAluno();
+      mostrarToast("Sua turma não está mais disponível. Fale com seu professor.");
+    }
+    return;
+  }
+
+  await carregarProgresso();
+  if (estado.aluno?.id === alunoSalvo.id) renderizarGradeFases();
+}
+
+iniciar();
