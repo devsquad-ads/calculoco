@@ -108,7 +108,8 @@ Arquivo: `database/schema.sql`. O script é **idempotente**: usa `create table i
 ## 5. Lógica de jogo: módulos, níveis e numeração de fases
 
 - **4 módulos**, um por operação: 1 = Adição, 2 = Subtração, 3 = Multiplicação, 4 = Divisão.
-- Cada módulo tem **5 níveis** de dificuldade crescente (nível 1 = números baixos/1 algarismo; nível 5 = números maiores).
+- Cada módulo tem um **tema fixo** (igual ao cenário de fundo): Adição = Ilha (praia/aquário), Subtração = Mercado (mercado/cozinha), Multiplicação = Selva (parque/fazenda), Divisão = Vale (parque/fazenda). Os enunciados de cada módulo só usam contextos coerentes com o seu tema.
+- Cada módulo tem **5 níveis** de dificuldade crescente. As faixas numéricas são estreitas e os dois operandos ficam na mesma ordem de grandeza, então perguntas de um mesmo nível têm dificuldade parecida e a escada entre níveis sobe de forma suave (sem pular de `2+3` para `58+40`).
 - Total: **20 fases jogáveis**.
 - A tabela `progresso` guarda tudo por um único `fase_numero` inteiro (1–20), não por (módulo, nível) separados. A conversão módulo/nível ↔ fase_numero acontece **no frontend** (`app.js`), que calcula `fase_numero = (modulo.numero - 1) * 5 + nivel` ao abrir uma fase. O backend (`routes/fases.js`) recebe módulo e nível **já decompostos** a partir do número da fase:
   ```js
@@ -124,12 +125,12 @@ Arquivo: `database/schema.sql`. O script é **idempotente**: usa `create table i
 ### Geração de perguntas (`backend/utils/perguntas.js`)
 
 Para cada módulo existe:
-1. Uma tabela `NIVEIS_<OPERACAO>` com 5 entradas (uma por nível), definindo os intervalos numéricos (`min`/`max`) sorteados para os operandos daquele nível — ficando mais largos e com números maiores a cada nível.
-2. Uma lista `TEMPLATES_<OPERACAO>` de enunciados contextualizados (várias frases diferentes, cada uma com um `contexto` associado — ex: `"mercado"`, `"escola"`, `"fazenda"`, `"festa"`, `"aquario"`, `"parque"`, `"praia"`, `"casa"`). Um template é sorteado aleatoriamente a cada pergunta.
+1. Uma tabela `NIVEIS_<OPERACAO>` com 5 entradas (uma por nível), definindo faixas numéricas **estreitas** (`min`/`max`) por nível. Na adição os dois operandos saem da mesma faixa (tamanho parecido); as somas por nível ficam em torno de 2–12, 8–22, 18–36, 30–60 e 50–100.
+2. Uma lista `TEMPLATES_<OPERACAO>` de enunciados, **todos coerentes com o tema do módulo** e com um `contexto` da paleta daquele módulo (Adição: `praia`/`aquario`; Subtração: `mercado`/`casa`; Multiplicação e Divisão: `parque`/`fazenda`). Um template é sorteado a cada pergunta.
 3. Uma função `gerar<Operacao>(nivel)` que sorteia os números dentro da faixa do nível, escolhe um template, calcula a resposta correta, e monta a questão.
 
 Regras específicas por operação:
-- **Subtração**: `b` é sempre sorteado entre 1 e `a-1`, para garantir resultado positivo (nunca subtração com resultado negativo).
+- **Subtração**: o subtraendo `b` fica entre ~20% e ~80% do minuendo `a` (sempre `1 ≤ b < a`), garantindo resultado positivo e não trivial (nem quase o total, nem quase zero).
 - **Divisão**: sorteia primeiro o **divisor** e o **quociente** dentro das faixas do nível, e calcula `dividendo = divisor * quociente` — ou seja, **a divisão é sempre exata** (sem resto), para caber no formato de múltipla escolha sem ambiguidade.
 
 `montarQuestao()` centraliza a montagem final: gera 3 distratores plausíveis via `gerarDistratores(correta)` (números próximos da resposta certa, dentro de um espalhamento proporcional ao tamanho do número — evita distratores óbvios demais ou longe demais), embaralha as 4 opções (correta + 3 distratores) e calcula o índice correto dentro do array embaralhado.
