@@ -53,7 +53,7 @@ test("no último nível do módulo, o botão leva para o próximo módulo", asyn
   await expect(page.locator("#pill-fase")).toHaveText("Subtração · Nível 1 de 5");
 });
 
-test("na última fase do jogo só aparece a volta ao menu", async ({ page }) => {
+test("na última fase das operações só aparece a volta ao menu", async ({ page }) => {
   await simularResposta(page, true);
   const concluidas = Array.from({ length: 19 }, (_, i) => ({
     fase_numero: i + 1, concluida: true, pontos: 20,
@@ -64,7 +64,7 @@ test("na última fase do jogo só aparece a volta ao menu", async ({ page }) => 
   await acertarPergunta(page);
 
   await expect(page.locator("#btn-proxima-fase")).toBeHidden();
-  await expect(page.locator("#texto-feedback")).toContainText("completou todas as fases");
+  await expect(page.locator("#texto-feedback")).toContainText("todas as operações");
   await page.locator("#btn-menu-fim").click();
   await expect(page.locator("#tela-menu")).toHaveClass(/ativa/);
   await expect(page.locator('.nivel-btn[data-fase="20"]')).toHaveClass(/concluido/);

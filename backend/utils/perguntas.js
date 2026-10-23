@@ -304,6 +304,103 @@ function gerarDivisao(nivel) {
   });
 }
 
+/* ===================== MÓDULO 5 — CONCEITOS (QUAL É A CONTA?) ===================== */
+
+// Aqui o aluno não calcula: ele identifica QUAL operação a situação pede, ou
+// responde ideias gerais sobre as operações. Os números são só enfeite.
+const OPERACOES = ["Adição", "Subtração", "Multiplicação", "Divisão"];
+const NOMES = ["João", "Maria", "Ana", "Pedro", "Lucas", "Clara", "Bia", "Rafa"];
+
+function montarConceito({ enunciado, opcoes, correta, contexto }) {
+  const valores = embaralhar(opcoes);
+  return {
+    enunciado,
+    operacao: "conceito",
+    contexto,
+    opcoes: valores,
+    correctIndex: valores.indexOf(correta),
+  };
+}
+
+// Pergunta cuja resposta é uma das 4 operações.
+function qualOperacao(enunciado, correta, contexto = "escola") {
+  return montarConceito({ enunciado, opcoes: [...OPERACOES], correta, contexto });
+}
+
+const SIT_ADICAO = [
+  () => {
+    const n = escolher(NOMES), a = numeroAleatorio(2, 9), b = numeroAleatorio(2, 9);
+    return qualOperacao(`${n} tinha ${a} lápis e ganhou mais ${b}. Para saber com quantos ficou, qual conta ${n} faz?`, "Adição");
+  },
+  () => {
+    const a = numeroAleatorio(2, 9), b = numeroAleatorio(2, 9);
+    return qualOperacao(`Havia ${a} patinhos no lago e chegaram mais ${b}. Para saber o total, qual operação usamos?`, "Adição", "aquario");
+  },
+];
+
+const SIT_SUBTRACAO = [
+  () => {
+    const n = escolher(NOMES), a = numeroAleatorio(6, 12), b = numeroAleatorio(2, 5);
+    return qualOperacao(`${n} tinha ${a} balas e deu ${b} para um amigo. Para saber quantas sobraram, qual conta ${n} faz?`, "Subtração");
+  },
+  () => {
+    const a = numeroAleatorio(6, 12), b = numeroAleatorio(2, 5);
+    return qualOperacao(`Havia ${a} passarinhos no galho e ${b} voaram. Para saber quantos ficaram, qual operação?`, "Subtração", "parque");
+  },
+];
+
+const SIT_MULTIPLICACAO = [
+  () => {
+    const a = numeroAleatorio(2, 6), b = numeroAleatorio(2, 6);
+    return qualOperacao(`Há ${a} caixas com ${b} maçãs em cada uma. Para saber o total de maçãs, qual operação usamos?`, "Multiplicação", "mercado");
+  },
+  () => {
+    const a = numeroAleatorio(2, 6), b = numeroAleatorio(2, 6);
+    return qualOperacao(`Numa festa há ${a} mesas com ${b} crianças em cada. Para saber quantas crianças ao todo, qual conta?`, "Multiplicação", "festa");
+  },
+];
+
+const SIT_DIVISAO = [
+  () => {
+    const b = numeroAleatorio(2, 5), a = b * numeroAleatorio(2, 5);
+    return qualOperacao(`Temos ${a} figurinhas para repartir igualmente entre ${b} amigos. Qual operação resolve isso?`, "Divisão");
+  },
+  () => {
+    const b = numeroAleatorio(2, 5), a = b * numeroAleatorio(2, 5);
+    return qualOperacao(`${a} biscoitos vão ser divididos igualmente em ${b} pratos. Qual operação usamos?`, "Divisão", "casa");
+  },
+];
+
+const CONCEITOS_PALAVRAS = [
+  () => montarConceito({ enunciado: "Qual destas palavras indica que vamos JUNTAR (somar)?", opcoes: ["ganhou mais", "sobrou", "repartir", "tirou"], correta: "ganhou mais", contexto: "escola" }),
+  () => montarConceito({ enunciado: "Qual destas palavras indica que vamos TIRAR (subtrair)?", opcoes: ["sobrou", "juntou", "no total", "vezes"], correta: "sobrou", contexto: "escola" }),
+  () => qualOperacao('"Repartir igualmente entre amigos" combina com qual operação?', "Divisão"),
+  () => qualOperacao('"Juntar vários grupos iguais de uma vez" é a ideia de qual operação?', "Multiplicação"),
+  () => qualOperacao('"Quantos sobraram depois de tirar uma parte" é qual operação?', "Subtração"),
+  () => qualOperacao('"Juntar tudo para saber o total" é qual operação?', "Adição"),
+];
+
+const CONCEITOS_AVANCADOS = [
+  () => qualOperacao("Qual é a operação contrária (inversa) da adição?", "Subtração"),
+  () => qualOperacao("Qual é a operação contrária (inversa) da multiplicação?", "Divisão"),
+  () => qualOperacao("Somar o número 4 três vezes (4 + 4 + 4) é o mesmo que qual operação?", "Multiplicação"),
+  () => qualOperacao("Para conferir se uma subtração está certa, posso usar qual operação?", "Adição"),
+  () => qualOperacao("Repartir 12 em 3 partes iguais, para saber quanto vai em cada uma, é qual operação?", "Divisão"),
+];
+
+// Progressão: situações claras → todas as operações → palavras-chave → ideias abstratas.
+const NIVEIS_CONCEITO = [
+  [...SIT_ADICAO, ...SIT_SUBTRACAO],
+  [...SIT_MULTIPLICACAO, ...SIT_DIVISAO],
+  [...SIT_ADICAO, ...SIT_SUBTRACAO, ...SIT_MULTIPLICACAO, ...SIT_DIVISAO],
+  CONCEITOS_PALAVRAS,
+  CONCEITOS_AVANCADOS,
+];
+
+function gerarConceito(nivel) {
+  return escolher(NIVEIS_CONCEITO[nivel - 1])();
+}
+
 /* ===================== SELETOR POR MÓDULO ===================== */
 
 const GERADORES_POR_MODULO = {
@@ -311,9 +408,10 @@ const GERADORES_POR_MODULO = {
   2: gerarSubtracao,
   3: gerarMultiplicacao,
   4: gerarDivisao,
+  5: gerarConceito,
 };
 
-const TOTAL_MODULOS = 4;
+const TOTAL_MODULOS = 5;
 const NIVEIS_POR_MODULO = 5;
 const TOTAL_FASES = TOTAL_MODULOS * NIVEIS_POR_MODULO;
 

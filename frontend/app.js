@@ -8,15 +8,34 @@ const CHAVE_PROGRESSO_ALUNO = "calculoco_progresso_aluno";
 // sessionStorage: tela em que a aba estava, para voltar nela ao recarregar
 const CHAVE_TELA = "calculoco_tela";
 
-// Os 4 módulos do jogo (1 para cada operação). Cada módulo tem 5 níveis
-// de dificuldade crescente (fase_numero global = (modulo-1)*5 + nivel).
+// Os 4 módulos de operações. Cada módulo tem 5 níveis de dificuldade
+// crescente (fase_numero global = (modulo-1)*5 + nivel).
 const MODULOS = [
   { numero: 1, titulo: "Ilha da Adição", icone: "+", cor: "var(--amarelo)", operacao: "Adição" },
   { numero: 2, titulo: "Mercado da Subtração", icone: "−", cor: "var(--rosa)", operacao: "Subtração" },
   { numero: 3, titulo: "Selva da Multiplicação", icone: "×", cor: "var(--verde)", operacao: "Multiplicação" },
   { numero: 4, titulo: "Vale da Divisão", icone: "÷", cor: "var(--azul-ceu)", operacao: "Divisão" },
 ];
-const TOTAL_FASES = MODULOS.length * 5;
+
+// Módulo 5, separado: testa o entendimento (qual operação usar), sem calcular.
+// Fica liberado desde o início, independente da trilha das operações.
+const MODULO_CONCEITO = {
+  numero: 5,
+  titulo: "Qual é a conta?",
+  icone: "?",
+  cor: "var(--roxo)",
+  operacao: "Conceitos",
+  conceito: true,
+};
+
+const FASES_POR_MODULO = 5;
+const PRIMEIRA_FASE_CONCEITO = MODULOS.length * FASES_POR_MODULO + 1; // 21
+const TOTAL_FASES = (MODULOS.length + 1) * FASES_POR_MODULO; // 20 operações + 5 conceitos
+
+function moduloDaFase(numero) {
+  if (numero >= PRIMEIRA_FASE_CONCEITO) return MODULO_CONCEITO;
+  return MODULOS.find((m) => numero > (m.numero - 1) * 5 && numero <= m.numero * 5);
+}
 
 // Contextos de cenário reconhecidos: cada um tem um ícone de linha próprio
 // (definido em index.html, símbolo "icone-<contexto>") usado como decoração
@@ -585,6 +604,7 @@ document.getElementById("btn-excluir-turma").addEventListener("click", async () 
 
 const saudacao = document.getElementById("saudacao");
 const gradeFases = document.getElementById("grade-fases");
+const secaoConceito = document.getElementById("secao-conceito");
 const placarEstrelas = document.getElementById("placar-estrelas");
 
 async function entrarNoMenu() {
@@ -633,67 +653,72 @@ function faseConcluida(numero) {
 
 function faseDesbloqueada(numero) {
   if (numero === 1) return true;
+  if (numero === PRIMEIRA_FASE_CONCEITO) return true; // o módulo de conceitos é livre
   return faseConcluida(numero - 1);
+}
+
+function criarCartaoModulo(modulo) {
+  const primeiraFase = (modulo.numero - 1) * 5 + 1;
+  const moduloDesbloqueado = faseDesbloqueada(primeiraFase);
+
+  const cartao = document.createElement("div");
+  cartao.className = "cartao-modulo";
+  if (modulo.conceito) cartao.classList.add("cartao-conceito");
+  if (!moduloDesbloqueado) cartao.classList.add("bloqueado");
+  cartao.style.setProperty("--cor-modulo", modulo.cor);
+
+  const niveisHtml = [1, 2, 3, 4, 5]
+    .map((nivel) => {
+      const fase = primeiraFase + nivel - 1;
+      const desbloqueada = faseDesbloqueada(fase);
+      const concluida = faseConcluida(fase);
+      let classe = "nivel-btn";
+      if (!desbloqueada) classe += " bloqueado";
+      else if (concluida) classe += " concluido";
+      const conteudo = !desbloqueada
+        ? '<svg class="icone-inline"><use href="#icone-lock"></use></svg>'
+        : concluida
+        ? '<svg class="icone-inline"><use href="#icone-check"></use></svg>'
+        : nivel;
+      return `<button type="button" class="${classe}" data-fase="${fase}" ${
+        !desbloqueada ? "disabled" : ""
+      } aria-label="Nível ${nivel}">${conteudo}</button>`;
+    })
+    .join("");
+
+  const iconeModulo = moduloDesbloqueado
+    ? modulo.icone
+    : '<svg class="icone-inline"><use href="#icone-lock"></use></svg>';
+
+  cartao.innerHTML = `
+    <div class="cabecalho-modulo">
+      <span class="bolha-modulo">${iconeModulo}</span>
+      <div>
+        <div class="nome-modulo">${modulo.titulo}</div>
+        <div class="operacao-modulo">${modulo.conceito ? "Entenda qual conta usar" : modulo.operacao}</div>
+      </div>
+    </div>
+    <div class="niveis-modulo">${niveisHtml}</div>
+  `;
+
+  cartao.querySelectorAll(".nivel-btn").forEach((botao) => {
+    botao.addEventListener("click", () => {
+      if (botao.disabled) {
+        mostrarToast("Complete o nível anterior para desbloquear este nível.");
+        return;
+      }
+      abrirFase(Number(botao.dataset.fase));
+    });
+  });
+
+  return cartao;
 }
 
 function renderizarGradeFases() {
   gradeFases.innerHTML = "";
-
-  MODULOS.forEach((modulo) => {
-    const primeiraFase = (modulo.numero - 1) * 5 + 1;
-    const moduloDesbloqueado = faseDesbloqueada(primeiraFase);
-
-    const cartao = document.createElement("div");
-    cartao.className = "cartao-modulo";
-    if (!moduloDesbloqueado) cartao.classList.add("bloqueado");
-    cartao.style.setProperty("--cor-modulo", modulo.cor);
-
-    const niveisHtml = [1, 2, 3, 4, 5]
-      .map((nivel) => {
-        const fase = primeiraFase + nivel - 1;
-        const desbloqueada = faseDesbloqueada(fase);
-        const concluida = faseConcluida(fase);
-        let classe = "nivel-btn";
-        if (!desbloqueada) classe += " bloqueado";
-        else if (concluida) classe += " concluido";
-        const conteudo = !desbloqueada
-          ? '<svg class="icone-inline"><use href="#icone-lock"></use></svg>'
-          : concluida
-          ? '<svg class="icone-inline"><use href="#icone-check"></use></svg>'
-          : nivel;
-        return `<button type="button" class="${classe}" data-fase="${fase}" ${
-          !desbloqueada ? "disabled" : ""
-        } aria-label="Nível ${nivel}">${conteudo}</button>`;
-      })
-      .join("");
-
-    const iconeModulo = moduloDesbloqueado
-      ? modulo.icone
-      : '<svg class="icone-inline"><use href="#icone-lock"></use></svg>';
-
-    cartao.innerHTML = `
-      <div class="cabecalho-modulo">
-        <span class="bolha-modulo">${iconeModulo}</span>
-        <div>
-          <div class="nome-modulo">${modulo.titulo}</div>
-          <div class="operacao-modulo">${modulo.operacao}</div>
-        </div>
-      </div>
-      <div class="niveis-modulo">${niveisHtml}</div>
-    `;
-
-    cartao.querySelectorAll(".nivel-btn").forEach((botao) => {
-      botao.addEventListener("click", () => {
-        if (botao.disabled) {
-          mostrarToast("Complete o nível anterior para desbloquear este nível.");
-          return;
-        }
-        abrirFase(Number(botao.dataset.fase));
-      });
-    });
-
-    gradeFases.appendChild(cartao);
-  });
+  MODULOS.forEach((modulo) => gradeFases.appendChild(criarCartaoModulo(modulo)));
+  secaoConceito.innerHTML = "";
+  secaoConceito.appendChild(criarCartaoModulo(MODULO_CONCEITO));
 }
 
 function voltarAoMenu() {
@@ -1290,9 +1315,7 @@ function aplicarCenario(contexto) {
 }
 
 async function abrirFase(numeroFase) {
-  const modulo = MODULOS.find(
-    (m) => numeroFase > (m.numero - 1) * 5 && numeroFase <= m.numero * 5
-  );
+  const modulo = moduloDaFase(numeroFase);
   const nivel = numeroFase - (modulo.numero - 1) * 5;
 
   estado.fase = {
@@ -1442,16 +1465,25 @@ async function salvarProgressoFase(pontos) {
 }
 
 function mostrarAcoesFimFase() {
-  const proxima = estado.fase.numero + 1;
-  const temProxima = proxima <= TOTAL_FASES;
+  const atual = estado.fase.numero;
+  const proxima = atual + 1;
+  const ehConceito = atual >= PRIMEIRA_FASE_CONCEITO;
+  // Só avança dentro da mesma trilha (não pula das operações para os conceitos).
+  const temProxima =
+    proxima <= TOTAL_FASES && (proxima >= PRIMEIRA_FASE_CONCEITO) === ehConceito;
 
   btnProximaFase.classList.toggle("oculto", !temProxima);
   if (temProxima) {
-    const moduloProximo = MODULOS[Math.ceil(proxima / 5) - 1];
+    const moduloProximo = moduloDaFase(proxima);
     textoProximaFase.textContent =
       moduloProximo === estado.fase.modulo ? "Próximo nível" : `Ir para ${moduloProximo.titulo}`;
   } else {
-    textoFeedback.insertAdjacentHTML("beforeend", "<br>Você completou todas as fases!");
+    textoFeedback.insertAdjacentHTML(
+      "beforeend",
+      ehConceito
+        ? "<br>Você completou o desafio dos conceitos!"
+        : "<br>Você completou todas as operações!"
+    );
   }
 
   acoesFimFase.classList.remove("oculto");

@@ -44,7 +44,7 @@ calculoco/
 │   │   ├── progresso.js        # ler/gravar progresso do aluno por fase
 │   │   └── fases.js            # gerar pergunta aleatória e verificar resposta
 │   ├── utils/
-│   │   ├── perguntas.js        # geração de perguntas dos 4 módulos, com dificuldade progressiva
+│   │   ├── perguntas.js        # geração de perguntas dos 5 módulos (4 operações + conceitos)
 │   │   └── token.js            # assinatura HMAC do índice da resposta correta (a resposta nunca vai "em aberto" ao cliente)
 │   ├── package.json
 │   └── .env (não versionado; ver seção 9)
@@ -107,11 +107,12 @@ Arquivo: `database/schema.sql`. O script é **idempotente**: usa `create table i
 
 ## 5. Lógica de jogo: módulos, níveis e numeração de fases
 
-- **4 módulos**, um por operação: 1 = Adição, 2 = Subtração, 3 = Multiplicação, 4 = Divisão.
+- **5 módulos**: 1 = Adição, 2 = Subtração, 3 = Multiplicação, 4 = Divisão e 5 = Conceitos ("Qual é a conta?"). O módulo 5 não pede cálculo: o aluno identifica qual operação a situação pede (ou responde ideias gerais sobre as operações). As opções são palavras (os nomes das operações ou palavras-chave), não números.
 - Cada módulo tem um **tema fixo** (igual ao cenário de fundo): Adição = Ilha (praia/aquário), Subtração = Mercado (mercado/cozinha), Multiplicação = Selva (parque/fazenda), Divisão = Vale (parque/fazenda). Os enunciados de cada módulo só usam contextos coerentes com o seu tema.
 - Cada módulo tem **5 níveis** de dificuldade crescente. As faixas numéricas são estreitas e os dois operandos ficam na mesma ordem de grandeza, então perguntas de um mesmo nível têm dificuldade parecida e a escada entre níveis sobe de forma suave (sem pular de `2+3` para `58+40`).
-- Total: **20 fases jogáveis**.
-- A tabela `progresso` guarda tudo por um único `fase_numero` inteiro (1–20), não por (módulo, nível) separados. A conversão módulo/nível ↔ fase_numero acontece **no frontend** (`app.js`), que calcula `fase_numero = (modulo.numero - 1) * 5 + nivel` ao abrir uma fase. O backend (`routes/fases.js`) recebe módulo e nível **já decompostos** a partir do número da fase:
+- Total: **25 fases jogáveis** (20 de operações, fases 1–20; 5 de conceitos, fases 21–25).
+- O módulo de **conceitos** fica numa seção separada no menu e é **liberado desde o início** (fase 21 sempre disponível; 22–25 sequenciais dentro do módulo), independente da trilha das operações. O botão "Próximo nível" não atravessa de uma trilha para a outra.
+- A tabela `progresso` guarda tudo por um único `fase_numero` inteiro (1–25), não por (módulo, nível) separados. A conversão módulo/nível ↔ fase_numero acontece **no frontend** (`app.js`), que calcula `fase_numero = (modulo.numero - 1) * 5 + nivel` ao abrir uma fase. O backend (`routes/fases.js`) recebe módulo e nível **já decompostos** a partir do número da fase:
   ```js
   function decompoeFase(numero) {
     const modulo = Math.ceil(numero / 5);
@@ -136,6 +137,8 @@ Regras específicas por operação:
 `montarQuestao()` centraliza a montagem final: gera 3 distratores plausíveis via `gerarDistratores(correta)` (números próximos da resposta certa, dentro de um espalhamento proporcional ao tamanho do número — evita distratores óbvios demais ou longe demais), embaralha as 4 opções (correta + 3 distratores) e calcula o índice correto dentro do array embaralhado.
 
 `gerarQuestao(modulo, nivel)` é o ponto de entrada único, despachando para o gerador do módulo certo via um objeto `GERADORES_POR_MODULO`.
+
+O **módulo 5 (conceitos)** usa um caminho próprio: `gerarConceito(nivel)` sorteia uma pergunta de uma lista por nível (situações claras → todas as operações → palavras-chave → ideias abstratas) e `montarConceito()` embaralha opções que são **texto** (nomes de operações ou palavras-chave), não números — por isso não passa por `gerarDistratores`. O resto do fluxo (token assinado, verificação por índice) é igual ao das operações.
 
 ### Segurança da resposta correta (`backend/utils/token.js`)
 
@@ -210,7 +213,7 @@ Sessão do aluno persiste em `localStorage` (chave `calculoco_aluno`), guardando
 ### Fluxo do PROFESSOR
 1. **`tela-professor-auth`**: abas "Entrar"/"Criar conta" — cadastro pede nome completo + usuário + senha; login só usuário + senha.
 2. **`tela-professor-turmas`** ("Minhas turmas"): formulário para criar nova turma (só pede o nome da turma — o professor já está autenticado) + grade de cartões clicáveis, um por turma (nome, código, contagem de alunos).
-3. **`tela-professor-dashboard`**: ao clicar numa turma, mostra uma tabela com uma linha por aluno: nome, barra de progresso visual (X/20 fases concluídas), pontuação total (número + ícone de estrela) e um botão "Redefinir" (senha). Já vem ordenada da maior para a menor pontuação (o backend ordena, o frontend só renderiza na ordem recebida). O botão de redefinir pede confirmação (`window.confirm`, avisando qual vai ser a nova senha) antes de chamar a API — a nova senha (PIN) do aluno passa a ser o código da turma.
+3. **`tela-professor-dashboard`**: ao clicar numa turma, mostra uma tabela com uma linha por aluno: nome, barra de progresso visual (X/25 fases concluídas), pontuação total (número + ícone de estrela) e um botão "Redefinir" (senha). Já vem ordenada da maior para a menor pontuação (o backend ordena, o frontend só renderiza na ordem recebida). O botão de redefinir pede confirmação (`window.confirm`, avisando qual vai ser a nova senha) antes de chamar a API — a nova senha (PIN) do aluno passa a ser o código da turma.
 
 Sessão do professor persiste em `localStorage` (chave `calculoco_professor`), guardando `{ id, usuario, nome, token }`. O `token` (assinado pelo backend no login/cadastro) é reenviado em todas as rotas protegidas via header `Authorization: Bearer`; se ele expirar/invalidar, uma resposta 401 desloga o professor com um aviso.
 
@@ -287,7 +290,7 @@ Vêm da Declaração de Escopo e do Termo de Abertura do Projeto (TAP) já elabo
 - **Fora do escopo, deliberadamente**: aplicativo mobile nativo (só web), modo multiplayer/online, redes sociais, qualquer coleta de dado pessoal identificável de aluno (nome completo, e-mail, documento).
 - **Critério pedagógico**: os enunciados são sempre problemas contextualizados do cotidiano infantil (mercado, escola, festa, fazenda, etc.), nunca só "a + b = ?" solto — isso é intencional, é o diferencial pedagógico do produto (BNCC valoriza resolução de problemas práticos, não só cálculo mecânico).
 - **Números sempre aleatórios** a cada tentativa (nunca hardcoded), para impedir que um aluno "cole" a resposta de outro que já jogou a mesma fase.
-- **Progressão estritamente sequencial**: um nível só abre depois do anterior concluído (dentro do módulo, e entre módulos também, já que a numeração de fase é global 1–20).
+- **Progressão estritamente sequencial**: um nível só abre depois do anterior concluído (dentro do módulo, e entre módulos também, já que a numeração de fase é global 1–25), com exceção do módulo de conceitos (fase 21), que é liberado desde o início.
 - Time de 4 pessoas (PO, Scrum Master/QA, 2 Devs), metodologia Scrum, sprints de ~2 semanas, ferramentas de gestão: Trello (backlog/board) + canal do YouTube (registro de reuniões).
 
 ## 11. Limitações conhecidas / dívidas técnicas atuais

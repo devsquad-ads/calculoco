@@ -104,6 +104,12 @@ test("responsividade de todas as telas, de 320px a 1280px", async ({ page, baseU
   await expect(page.locator(".btn-opcao")).toHaveCount(4);
   todos.push(...(await auditar(page, "tela-jogo")));
 
+  // Desafio de conceitos: opções são palavras longas ("Multiplicação").
+  await page.locator("#btn-voltar-menu").click();
+  await page.locator('.cartao-conceito .nivel-btn[data-fase="21"]').click();
+  await expect(page.locator(".btn-opcao")).toHaveCount(4);
+  todos.push(...(await auditar(page, "tela-jogo-conceito")));
+
   if (todos.length) console.log("PROBLEMAS DE RESPONSIVIDADE:\n" + todos.join("\n"));
   expect(todos, todos.join("\n")).toHaveLength(0);
 });

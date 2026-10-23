@@ -349,6 +349,33 @@ body{
 }
 .cartao-modulo.bloqueado{opacity:0.55;}
 
+/* Seção separada do desafio de conceitos, abaixo dos 4 módulos. */
+.area-conceito{
+  max-width:900px;
+  margin:10px auto 0;
+  padding:0 5vw;
+}
+.faixa-conceito{margin-top:18px;}
+.faixa-conceito h2{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(17px,2.4vw,22px);
+  margin:0;
+  color:var(--roxo);
+}
+.grade-conceito{
+  margin-top:16px;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:20px;
+}
+.cartao-conceito{
+  border:3px solid var(--roxo);
+  background:linear-gradient(180deg,#FBF4FF 0%,#FFFFFF 70%);
+}
+.cartao-conceito .bolha-modulo{color:var(--branco);}
+.cartao-conceito .nome-modulo{color:var(--roxo);}
+
 .cabecalho-modulo{
   display:flex;
   align-items:center;
