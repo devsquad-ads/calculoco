@@ -918,6 +918,47 @@ footer{
   padding:30px 20px;
 }
 
+/* Em telas estreitas a tabela vira cartões empilhados, sem rolagem lateral. */
+@media (max-width:560px){
+  .tabela-desempenho thead{display:none;}
+  .tabela-desempenho,
+  .tabela-desempenho tbody,
+  .tabela-desempenho tr,
+  .tabela-desempenho td{
+    display:block;
+    width:100%;
+  }
+  .tabela-desempenho tbody tr{
+    padding:12px 16px;
+    border-bottom:1px solid #EEF2FB;
+  }
+  .tabela-desempenho tbody tr:last-child{border-bottom:none;}
+  .tabela-desempenho tbody td{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:6px 0;
+    border:none;
+  }
+  .tabela-desempenho tbody td::before{
+    content:attr(data-rotulo);
+    font-weight:800;
+    font-size:12.5px;
+    color:#5C6D95;
+    flex-shrink:0;
+  }
+  .celula-nome{
+    font-family:var(--font-display);
+    font-size:17px;
+    padding-bottom:10px !important;
+    margin-bottom:4px;
+    border-bottom:1px dashed #E4EAF6 !important;
+  }
+  .celula-nome::before{display:none;}
+  .barra-progresso-wrap{min-width:0; flex:1;}
+}
+
 .area-excluir-turma{
   max-width:900px;
   margin:0 auto 40px;

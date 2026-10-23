@@ -498,8 +498,8 @@ function renderizarDesempenho(alunos, turma) {
 
       return `
         <tr>
-          <td>${aluno.nome_usuario}</td>
-          <td>
+          <td data-rotulo="Aluno" class="celula-nome">${aluno.nome_usuario}</td>
+          <td data-rotulo="Progresso">
             <div class="barra-progresso-wrap">
               <div class="barra-progresso">
                 <div class="barra-progresso-preenchida" style="width:${percentualProgresso}%"></div>
@@ -507,8 +507,8 @@ function renderizarDesempenho(alunos, turma) {
               <span class="barra-progresso-texto">${aluno.fases_concluidas}/${aluno.total_fases}</span>
             </div>
           </td>
-          <td>${pontosComEstrela(aluno.pontuacao_total)}</td>
-          <td>
+          <td data-rotulo="Pontuação">${pontosComEstrela(aluno.pontuacao_total)}</td>
+          <td data-rotulo="Senha">
             <button type="button" class="btn-linha btn-linha-icone btn-redefinir-pin" data-aluno-id="${aluno.aluno_id}" data-aluno-nome="${aluno.nome_usuario}">
               <svg class="icone-inline" aria-hidden="true"><use href="#icone-refresh"></use></svg>
               Redefinir
