@@ -1,4 +1,5 @@
 const { test, expect } = require("@playwright/test");
+const { estadoConvidado } = require("../apoio/convidado");
 
 // Fixa o resultado da verificação (a alternativa certa é sorteada).
 async function simularResposta(page, correta) {
@@ -10,7 +11,7 @@ async function simularResposta(page, correta) {
 async function jogarSemLogin(page, progresso = []) {
   await page.addInitScript((dados) => {
     localStorage.setItem("calculoco_convidado", JSON.stringify(dados));
-  }, { ativo: true, progresso });
+  }, estadoConvidado(progresso));
   await page.goto("/");
   await expect(page.locator("#tela-menu")).toHaveClass(/ativa/);
 }

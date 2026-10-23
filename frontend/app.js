@@ -246,13 +246,25 @@ document.getElementById("btn-sair").addEventListener("click", sairAluno);
 
 /* ===================== JOGO SEM LOGIN ===================== */
 
+const SELO_CONVIDADO = "calculoco-convidado-v1";
+
+// Selo de integridade do progresso anônimo. Não é segurança de verdade (a
+// "chave" está no próprio código), mas impede a edição casual do placar no
+// localStorage: mudar o número sem recalcular o selo invalida os dados, que
+// passam a ser ignorados. Não há ranking de convidado, então o risco é baixo.
+function selarConvidado(progresso) {
+  const texto = SELO_CONVIDADO + JSON.stringify(progresso);
+  let h = 5381;
+  for (let i = 0; i < texto.length; i++) h = ((h << 5) + h + texto.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
 function lerDadosConvidado() {
   try {
     const dados = JSON.parse(localStorage.getItem(CHAVE_CONVIDADO));
-    return {
-      ativo: !!dados?.ativo,
-      progresso: Array.isArray(dados?.progresso) ? dados.progresso : [],
-    };
+    const progresso = Array.isArray(dados?.progresso) ? dados.progresso : [];
+    const selado = progresso.length === 0 || dados?.selo === selarConvidado(progresso);
+    return { ativo: !!dados?.ativo, progresso: selado ? progresso : [] };
   } catch {
     return { ativo: false, progresso: [] };
   }
@@ -260,7 +272,11 @@ function lerDadosConvidado() {
 
 function salvarDadosConvidado(dados) {
   try {
-    localStorage.setItem(CHAVE_CONVIDADO, JSON.stringify(dados));
+    const progresso = Array.isArray(dados.progresso) ? dados.progresso : [];
+    localStorage.setItem(
+      CHAVE_CONVIDADO,
+      JSON.stringify({ ativo: !!dados.ativo, progresso, selo: selarConvidado(progresso) })
+    );
   } catch {
     mostrarToast("Não foi possível salvar o progresso neste aparelho.");
   }
@@ -569,6 +585,7 @@ document.getElementById("btn-excluir-turma").addEventListener("click", async () 
 
 const saudacao = document.getElementById("saudacao");
 const gradeFases = document.getElementById("grade-fases");
+const placarEstrelas = document.getElementById("placar-estrelas");
 
 async function entrarNoMenu() {
   await carregarProgresso();
@@ -578,8 +595,14 @@ async function entrarNoMenu() {
 function mostrarMenu() {
   saudacao.textContent = alunoConvidado() ? "Olá!" : `Olá, ${estado.aluno.nome_usuario}!`;
   document.getElementById("texto-btn-sair").textContent = alunoConvidado() ? "Início" : "Sair";
+  atualizarPlacar();
   renderizarGradeFases();
   mostrarTela("tela-menu");
+}
+
+function atualizarPlacar() {
+  const total = estado.progresso.reduce((soma, p) => soma + (p.pontos || 0), 0);
+  placarEstrelas.innerHTML = `Suas estrelas: ${pontosComEstrela(total)}`;
 }
 
 async function carregarProgresso() {
@@ -1353,11 +1376,24 @@ async function responder(indiceEscolhido, botaoClicado) {
 
     if (resultado.correta) {
       const pontosGanhos = calcularPontos(estado.fase.tentativas);
-      textoFeedback.innerHTML =
-        pontosGanhos > 0
-          ? `Muito bem, você acertou! ${pontosComEstrela(`+${pontosGanhos}`)}`
-          : "Muito bem, você acertou!";
+      const anterior = estado.progresso.find((p) => p.fase_numero === estado.fase.numero);
+      const recorde = anterior?.concluida ? anterior.pontos || 0 : null;
+
       textoFeedback.className = "feedback ok";
+      if (recorde === null) {
+        // Primeira vez que conclui esta fase.
+        textoFeedback.innerHTML =
+          pontosGanhos > 0
+            ? `Muito bem, você acertou! ${pontosComEstrela(`+${pontosGanhos}`)}`
+            : "Muito bem, você acertou!";
+      } else if (pontosGanhos > recorde) {
+        // Refez e melhorou — comemora o novo recorde.
+        textoFeedback.innerHTML = `Novo recorde nesta fase! ${pontosComEstrela(pontosGanhos)}`;
+      } else {
+        // Refez sem superar — o recorde é mantido, nada de "perder" pontos.
+        textoFeedback.innerHTML = `Boa, você acertou de novo! Seu recorde continua ${pontosComEstrela(recorde)}`;
+      }
+
       dispararConfete();
       tocarSomComemoracao();
       await salvarProgressoFase(pontosGanhos);
@@ -1379,8 +1415,10 @@ async function responder(indiceEscolhido, botaoClicado) {
 async function salvarProgressoFase(pontos) {
   if (alunoConvidado()) {
     const dados = lerDadosConvidado();
+    const anterior = dados.progresso.find((p) => p.fase_numero === estado.fase.numero);
+    const melhor = Math.max(anterior?.pontos || 0, pontos);
     const progresso = dados.progresso.filter((p) => p.fase_numero !== estado.fase.numero);
-    progresso.push({ fase_numero: estado.fase.numero, concluida: true, pontos });
+    progresso.push({ fase_numero: estado.fase.numero, concluida: true, pontos: melhor });
     progresso.sort((a, b) => a.fase_numero - b.fase_numero);
     salvarDadosConvidado({ ...dados, progresso });
     estado.progresso = progresso;

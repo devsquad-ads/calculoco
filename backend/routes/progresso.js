@@ -37,14 +37,23 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ erro: `pontos deve ser um destes valores: ${PONTOS_POSSIVEIS.join(", ")}.` });
   }
 
+  // Mantém o melhor desempenho: refazer um nível nunca diminui a pontuação
+  // nem "desconclui" a fase — só pode manter ou melhorar.
+  const { data: existente } = await supabase
+    .from("progresso")
+    .select("pontos, concluida")
+    .eq("aluno_id", aluno_id)
+    .eq("fase_numero", fase_numero)
+    .maybeSingle();
+
   const { data, error } = await supabase
     .from("progresso")
     .upsert(
       {
         aluno_id,
         fase_numero,
-        concluida: !!concluida,
-        pontos: pontos || 0,
+        concluida: !!concluida || !!existente?.concluida,
+        pontos: Math.max(pontos || 0, existente?.pontos || 0),
         atualizado_em: new Date().toISOString(),
       },
       { onConflict: "aluno_id,fase_numero" }

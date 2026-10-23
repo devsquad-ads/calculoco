@@ -92,9 +92,12 @@ test("recusa texto que não é o enunciado da questão", async () => {
   const semToken = await pedirAudio({ texto: questao.enunciado });
   assert.equal(semToken.status, 400);
 
+  // Troca o 1º char do texto cifrado (sempre significativo) para garantir
+  // que o GCM rejeite — mexer no último char da tag pode cair em bit de padding.
+  const [iv, cifra, tag] = questao.questionToken.split(".");
   const tokenAdulterado = await pedirAudio({
     texto: questao.enunciado,
-    questionToken: questao.questionToken.replace(/.$/, (c) => (c === "A" ? "B" : "A")),
+    questionToken: `${iv}.${cifra[0] === "A" ? "B" : "A"}${cifra.slice(1)}.${tag}`,
   });
   assert.equal(tokenAdulterado.status, 400);
 

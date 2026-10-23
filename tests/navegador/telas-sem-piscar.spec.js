@@ -1,5 +1,6 @@
 const { test, expect } = require("@playwright/test");
 const { criarClienteApi } = require("../apoio/api");
+const { estadoConvidado } = require("../apoio/convidado");
 
 // Registra toda tela que fica ativa, desde o carregamento da página.
 async function gravarTelas(page) {
@@ -119,10 +120,7 @@ test("visitante novo vê a tela inicial", async ({ page }) => {
 
 test("recarregar durante o jogo volta para a mesma fase", async ({ page }) => {
   await salvarNoStorage(page, {
-    calculoco_convidado: {
-      ativo: true,
-      progresso: [{ fase_numero: 1, concluida: true, pontos: 20 }],
-    },
+    calculoco_convidado: estadoConvidado([{ fase_numero: 1, concluida: true, pontos: 20 }]),
   });
   await page.reload();
   await page.locator('.nivel-btn[data-fase="2"]').click();
