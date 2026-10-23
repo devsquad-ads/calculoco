@@ -662,6 +662,97 @@ function voltarAoMenu() {
 
 document.getElementById("btn-voltar-menu").addEventListener("click", voltarAoMenu);
 
+/* ===================== TUTORIAL (COMO JOGAR) ===================== */
+
+const CHAVE_TUTORIAL_VISTO = "calculoco_tutorial_visto";
+
+const PASSOS_TUTORIAL = [
+  {
+    titulo: "Escolha um nível",
+    texto: "Cada módulo tem 5 níveis. Toque em um nível liberado para começar. O próximo abre quando você completa o anterior!",
+    figura: '<svg aria-hidden="true"><use href="#icone-lock"></use></svg>',
+  },
+  {
+    titulo: "Ouça a pergunta",
+    texto: "Leia a pergunta no balão ou toque no botão de som para o Calculoco ler para você.",
+    figura: '<svg aria-hidden="true"><use href="#icone-som"></use></svg>',
+  },
+  {
+    titulo: "Toque na resposta",
+    texto: "Faça a conta e toque na resposta certa. Errou? Sem problema, é só tentar de novo!",
+    figura: '<svg aria-hidden="true"><use href="#icone-check"></use></svg>',
+  },
+  {
+    titulo: "Ganhe estrelas",
+    texto: "Acertando de primeira você ganha 20 estrelas. Na segunda tentativa, 10, e na terceira, 5.",
+    figura: '<img class="estrela" src="img/estrela.png" alt="">',
+  },
+  {
+    titulo: "Vamos jogar?",
+    texto: "Complete todos os níveis de Adição, Subtração, Multiplicação e Divisão. Boa sorte!",
+    figura: '<img class="mascote-tutorial" src="img/mascote/1.jpeg" alt="">',
+  },
+];
+
+const dialogoTutorial = document.getElementById("dialogo-tutorial");
+const btnComoJogar = document.getElementById("btn-como-jogar");
+const btnTutorialVoltar = document.getElementById("btn-tutorial-voltar");
+const btnTutorialProximo = document.getElementById("btn-tutorial-proximo");
+let passoTutorial = 0;
+
+function renderizarPassoTutorial() {
+  const passo = PASSOS_TUTORIAL[passoTutorial];
+  const ultimo = passoTutorial === PASSOS_TUTORIAL.length - 1;
+
+  document.getElementById("figura-tutorial").innerHTML = passo.figura;
+  document.getElementById("passo-tutorial").textContent =
+    `Passo ${passoTutorial + 1} de ${PASSOS_TUTORIAL.length}`;
+  document.getElementById("titulo-tutorial").textContent = passo.titulo;
+  document.getElementById("texto-tutorial").textContent = passo.texto;
+  document.getElementById("pontos-tutorial").innerHTML = PASSOS_TUTORIAL.map(
+    (_, i) => `<span class="${i === passoTutorial ? "ativo" : ""}"></span>`
+  ).join("");
+
+  btnTutorialVoltar.classList.toggle("oculto", passoTutorial === 0);
+  btnTutorialProximo.textContent = ultimo ? "Vamos jogar!" : "Próximo";
+}
+
+function abrirTutorial() {
+  passoTutorial = 0;
+  renderizarPassoTutorial();
+  dialogoTutorial.showModal();
+  btnComoJogar.classList.remove("destaque");
+  try {
+    localStorage.setItem(CHAVE_TUTORIAL_VISTO, "1");
+  } catch {}
+}
+
+btnComoJogar.addEventListener("click", abrirTutorial);
+document.getElementById("btn-fechar-tutorial").addEventListener("click", () => dialogoTutorial.close());
+
+btnTutorialVoltar.addEventListener("click", () => {
+  passoTutorial -= 1;
+  renderizarPassoTutorial();
+});
+
+btnTutorialProximo.addEventListener("click", () => {
+  if (passoTutorial === PASSOS_TUTORIAL.length - 1) {
+    dialogoTutorial.close();
+    return;
+  }
+  passoTutorial += 1;
+  renderizarPassoTutorial();
+});
+
+// clique no fundo escuro fecha
+dialogoTutorial.addEventListener("click", (e) => {
+  if (e.target === dialogoTutorial) dialogoTutorial.close();
+});
+
+try {
+  if (!localStorage.getItem(CHAVE_TUTORIAL_VISTO)) btnComoJogar.classList.add("destaque");
+} catch {}
+
 /* ===================== TELA 4: JOGO ===================== */
 
 const areaJogo = document.getElementById("area-jogo");
