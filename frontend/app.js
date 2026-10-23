@@ -13,6 +13,7 @@ const MODULOS = [
   { numero: 3, titulo: "Selva da Multiplicação", icone: "×", cor: "var(--verde)", operacao: "Multiplicação" },
   { numero: 4, titulo: "Vale da Divisão", icone: "÷", cor: "var(--azul-ceu)", operacao: "Divisão" },
 ];
+const TOTAL_FASES = MODULOS.length * 5;
 
 // Contextos de cenário reconhecidos: cada um tem um ícone de linha próprio
 // (definido em index.html, símbolo "icone-<contexto>") usado como decoração
@@ -601,10 +602,13 @@ function renderizarGradeFases() {
   });
 }
 
-document.getElementById("btn-voltar-menu").addEventListener("click", () => {
+function voltarAoMenu() {
   if (sintetizadorVoz) sintetizadorVoz.cancel();
+  renderizarGradeFases();
   mostrarTela("tela-menu");
-});
+}
+
+document.getElementById("btn-voltar-menu").addEventListener("click", voltarAoMenu);
 
 /* ===================== TELA 4: JOGO ===================== */
 
@@ -629,7 +633,10 @@ function sortearPoseMascote() {
 const textoEnunciado = document.getElementById("texto-enunciado");
 const opcoesResposta = document.getElementById("opcoes-resposta");
 const textoFeedback = document.getElementById("texto-feedback");
-const btnContinuarJogo = document.getElementById("btn-continuar-jogo");
+const acoesFimFase = document.getElementById("acoes-fim-fase");
+const btnProximaFase = document.getElementById("btn-proxima-fase");
+const textoProximaFase = document.getElementById("texto-proxima-fase");
+const btnMenuFim = document.getElementById("btn-menu-fim");
 const btnTentarNovamente = document.getElementById("btn-tentar-novamente");
 const confeteContainer = document.getElementById("confete-container");
 
@@ -1042,7 +1049,7 @@ async function carregarPergunta() {
   opcoesResposta.innerHTML = "";
   textoFeedback.textContent = "";
   textoFeedback.className = "feedback";
-  btnContinuarJogo.classList.add("oculto");
+  acoesFimFase.classList.add("oculto");
   btnTentarNovamente.classList.add("oculto");
   estado.fase.respondida = false;
   estado.fase.tentativas += 1;
@@ -1096,7 +1103,7 @@ async function responder(indiceEscolhido, botaoClicado) {
       dispararConfete();
       tocarSomComemoracao();
       await salvarProgressoFase(pontosGanhos);
-      btnContinuarJogo.classList.remove("oculto");
+      mostrarAcoesFimFase();
     } else {
       botaoClicado.classList.add("errada");
       textoFeedback.textContent = "Não foi dessa vez, tente novamente.";
@@ -1138,11 +1145,26 @@ async function salvarProgressoFase(pontos) {
   }
 }
 
+function mostrarAcoesFimFase() {
+  const proxima = estado.fase.numero + 1;
+  const temProxima = proxima <= TOTAL_FASES;
+
+  btnProximaFase.classList.toggle("oculto", !temProxima);
+  if (temProxima) {
+    const moduloProximo = MODULOS[Math.ceil(proxima / 5) - 1];
+    textoProximaFase.textContent =
+      moduloProximo === estado.fase.modulo ? "Próximo nível" : `Ir para ${moduloProximo.titulo}`;
+  } else {
+    textoFeedback.insertAdjacentHTML("beforeend", "<br>Você completou todas as fases!");
+  }
+
+  acoesFimFase.classList.remove("oculto");
+  (temProxima ? btnProximaFase : btnMenuFim).focus();
+}
+
 btnTentarNovamente.addEventListener("click", carregarPergunta);
-btnContinuarJogo.addEventListener("click", async () => {
-  renderizarGradeFases();
-  mostrarTela("tela-menu");
-});
+btnProximaFase.addEventListener("click", () => abrirFase(estado.fase.numero + 1));
+btnMenuFim.addEventListener("click", voltarAoMenu);
 
 /* ===================== INICIALIZAÇÃO ===================== */
 

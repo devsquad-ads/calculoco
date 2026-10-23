@@ -427,12 +427,20 @@
       <div class="cartao-pergunta">
         <div class="opcoes" id="opcoes-resposta"></div>
         <p class="feedback" id="texto-feedback"></p>
-        <button class="cta-jogar oculto btn-linha-icone" id="btn-continuar-jogo">
-          Continuar
-          <svg class="icone-inline" aria-hidden="true">
-            <use href="#icone-seta"></use>
-          </svg>
-        </button>
+        <div class="acoes-fim-fase oculto" id="acoes-fim-fase">
+          <button class="cta-jogar btn-linha-icone" id="btn-proxima-fase">
+            <span id="texto-proxima-fase">Próximo nível</span>
+            <svg class="icone-inline" aria-hidden="true">
+              <use href="#icone-seta"></use>
+            </svg>
+          </button>
+          <button type="button" class="btn-linha btn-linha-icone btn-menu-fim" id="btn-menu-fim">
+            <svg class="icone-inline" aria-hidden="true">
+              <use href="#icone-voltar"></use>
+            </svg>
+            Voltar ao menu
+          </button>
+        </div>
         <button class="cta-jogar oculto btn-tentar-de-novo btn-linha-icone" id="btn-tentar-novamente">
           <svg class="icone-inline" aria-hidden="true">
             <use href="#icone-refresh"></use>

@@ -594,6 +594,13 @@ body.em-jogo .area-jogo{box-shadow:0 20px 40px rgba(18,40,92,0.25);}
 .cta-jogar:hover{transform:translateY(-2px);}
 .cta-jogar:active{transform:translateY(3px); box-shadow:0 2px 0 var(--verde-escuro);}
 .cta-jogar:focus-visible{outline:3px solid var(--azul-noite); outline-offset:3px;}
+.acoes-fim-fase{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+}
+.btn-menu-fim{width:100%;}
 .btn-tentar-de-novo{background:var(--laranja); box-shadow:0 5px 0 #C96700;}
 .btn-tentar-de-novo:active{box-shadow:0 2px 0 #C96700;}
 
