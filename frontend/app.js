@@ -84,8 +84,13 @@ function lerJson(armazenamento, chave) {
 /* ===================== NAVEGAÇÃO ENTRE TELAS ===================== */
 
 function mostrarTela(id, telaSalva = null) {
-  document.querySelectorAll(".tela").forEach((t) => t.classList.remove("ativa"));
-  document.getElementById(id).classList.add("ativa");
+  const alvo = document.getElementById(id);
+  // Só mexe nas classes se a tela mudou, senão a animação de entrada
+  // reexecuta e dá a impressão de "piscar" (ex.: trocar de fase no jogo).
+  if (!alvo.classList.contains("ativa")) {
+    document.querySelectorAll(".tela.ativa").forEach((t) => t.classList.remove("ativa"));
+    alvo.classList.add("ativa");
+  }
   document.body.classList.toggle("em-jogo", id === "tela-jogo");
   try {
     if (telaSalva) sessionStorage.setItem(CHAVE_TELA, JSON.stringify(telaSalva));
@@ -782,6 +787,7 @@ const textoProximaFase = document.getElementById("texto-proxima-fase");
 const btnMenuFim = document.getElementById("btn-menu-fim");
 const btnTentarNovamente = document.getElementById("btn-tentar-novamente");
 const confeteContainer = document.getElementById("confete-container");
+const cartaoPergunta = document.querySelector(".cartao-pergunta");
 
 /* ===================== LEITURA EM VOZ ALTA (TTS) ===================== */
 
@@ -1268,28 +1274,40 @@ async function abrirFase(numeroFase) {
   await carregarPergunta();
 }
 
+let pedidoPergunta = 0;
+
 async function carregarPergunta() {
   pararFala();
-  estado.fase.enunciado = null;
-  textoEnunciado.textContent = "Carregando pergunta...";
-  opcoesResposta.innerHTML = "";
+  estado.fase.respondida = false;
+  estado.fase.tentativas += 1;
+  const pedido = ++pedidoPergunta;
+
   textoFeedback.textContent = "";
   textoFeedback.className = "feedback";
   acoesFimFase.classList.add("oculto");
   btnTentarNovamente.classList.add("oculto");
-  estado.fase.respondida = false;
-  estado.fase.tentativas += 1;
-  sortearPoseMascote();
+  document.querySelectorAll(".btn-opcao").forEach((b) => (b.disabled = true));
+
+  // Já tem pergunta na tela (trocou de fase / tentar de novo): mantém o card
+  // esmaecido até a nova chegar, em vez de esvaziar e piscar "Carregando".
+  if (opcoesResposta.children.length > 0) cartaoPergunta.classList.add("carregando");
+  else textoEnunciado.textContent = "Carregando pergunta...";
 
   try {
     const questao = await chamarApi(`/fases/${estado.fase.numero}/questao`);
+    if (pedido !== pedidoPergunta) return;
     estado.fase.questionToken = questao.questionToken;
     estado.fase.enunciado = questao.enunciado;
+    sortearPoseMascote();
     textoEnunciado.textContent = questao.enunciado;
     aplicarCenario(questao.contexto);
     renderizarOpcoes(questao.opcoes);
   } catch (erro) {
+    if (pedido !== pedidoPergunta) return;
     textoEnunciado.textContent = erro.message;
+    opcoesResposta.innerHTML = "";
+  } finally {
+    if (pedido === pedidoPergunta) cartaoPergunta.classList.remove("carregando");
   }
 }
 
