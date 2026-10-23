@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const supabase = require("../supabaseClient");
+const { assinarSessao, exigirProfessor } = require("../utils/sessao");
 
 function credenciaisValidas(usuario, senha) {
   return (
@@ -52,7 +53,7 @@ router.post("/cadastro", async (req, res) => {
     }
     return res.status(500).json({ erro: error.message });
   }
-  res.status(201).json({ professor });
+  res.status(201).json({ professor, token: assinarSessao({ professor_id: professor.id }) });
 });
 
 // POST /api/professores/login  { usuario, senha }
@@ -76,14 +77,15 @@ router.post("/login", async (req, res) => {
 
   res.json({
     professor: { id: professor.id, usuario: professor.usuario, nome: professor.nome },
+    token: assinarSessao({ professor_id: professor.id }),
   });
 });
 
 // GET /api/professores/:professor_id/turmas
 // Lista as turmas criadas por esse professor (exceto as excluídas), com a
 // contagem de alunos de cada uma.
-router.get("/:professor_id/turmas", async (req, res) => {
-  const { professor_id } = req.params;
+router.get("/:professor_id/turmas", exigirProfessor, async (req, res) => {
+  const professor_id = req.professorId;
 
   const { data: turmas, error } = await supabase
     .from("turmas")

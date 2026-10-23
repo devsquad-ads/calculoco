@@ -139,7 +139,7 @@ Regras específicas por operação:
 ### Segurança da resposta correta (`backend/utils/token.js`)
 
 A resposta correta **nunca é enviada ao cliente em texto aberto** junto com a pergunta. Fluxo:
-1. `GET /api/fases/:numero/questao` gera a pergunta, e assina um **token HMAC-SHA256** (`assinarQuestao`) contendo `{ correctIndex, operacao, fase, exp }` (expira em alguns minutos). O token (string opaca, `payload_base64.assinatura`) é devolvido junto com o enunciado e as opções — mas o índice correto **não** aparece em lugar nenhum visível.
+1. `GET /api/fases/:numero/questao` gera a pergunta e **criptografa** um token (`assinarQuestao`, AES-256-GCM com chave derivada de `QUESTION_SECRET`) contendo `{ correctIndex, operacao, fase, h, exp }` — `h` é o hash do enunciado, usado pelo TTS. O token (`iv.cifra.tag`, tudo base64url) é devolvido junto com o enunciado e as opções; por ser cifrado, nem decodificando o base64 dá para ler `correctIndex`. (Versões antigas só assinavam o payload em base64, que era legível — corrigido.)
 2. Quando o aluno responde, o frontend envia `POST /api/fases/:numero/verificar` com `{ questionToken, resposta }`.
 3. O backend valida a assinatura (`verificarToken`) e só então compara `resposta === correctIndex`, devolvendo `{ correta: boolean, correctIndex }` (o índice correto só é revelado **depois** de responder, para exibir feedback visual).
 
@@ -167,7 +167,7 @@ Prefixo comum: `/api`. Todas as respostas são JSON; erros seguem o formato `{ e
 |---|---|---|---|
 | POST | `/api/turmas` | `{ nome_turma, professor_id }` | Cria uma turma **vinculada a um professor autenticado** (exige `professor_id` válido). Gera um código numérico de 4 dígitos único (retry loop de até 10 tentativas checando colisão no banco). |
 | GET | `/api/turmas/:codigo` | — | Busca turma pelo código de 4 dígitos (usado pela tela do aluno para validar o código digitado). |
-| GET | `/api/turmas/:turma_id/desempenho?professor_id=...` | query `professor_id` | **Dashboard**: retorna a turma + lista de alunos com resumo de desempenho de cada um (`fases_concluidas`, `total_fases` fixo em 20, `pontuacao_total`), **já ordenada por `pontuacao_total` decrescente** (maior pontuação primeiro). **Autorização**: compara `turma.professor_id` com o `professor_id` da query; se não bater, retorna 403. Não há sessão/JWT — a autorização depende do frontend enviar o `professor_id` correto (guardado em `localStorage` após login). |
+| GET | `/api/turmas/:turma_id/desempenho?professor_id=...` | query `professor_id` | **Dashboard**: retorna a turma + lista de alunos com resumo de desempenho de cada um (`fases_concluidas`, `total_fases` fixo em 20, `pontuacao_total`), **já ordenada por `pontuacao_total` decrescente** (maior pontuação primeiro). **Autorização**: exige o header `Authorization: Bearer <token>` (`exigirProfessor`); o `professor_id` vem do token assinado, não da query, e é comparado com `turma.professor_id` (403 se não bater). |
 | POST | `/api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin` | `{ professor_id }` | Redefine o PIN do aluno para o **código da turma** — usado pelo professor quando o aluno esquece a senha. Mesma checagem de autorização do dashboard (só o professor dono da turma). Devolve `{ ok, novo_pin }`. |
 | DELETE | `/api/turmas/:turma_id` | `{ professor_id }` | **Exclusão lógica** da turma (preenche `excluida_em`, nada é apagado). Só o professor dono pode (403 caso contrário); turma inexistente ou já excluída → 404. Depois disso a turma some da lista do professor e o código passa a responder 404 para login/cadastro de alunos. |
 
@@ -209,7 +209,7 @@ Sessão do aluno persiste em `localStorage` (chave `calculoco_aluno`), guardando
 2. **`tela-professor-turmas`** ("Minhas turmas"): formulário para criar nova turma (só pede o nome da turma — o professor já está autenticado) + grade de cartões clicáveis, um por turma (nome, código, contagem de alunos).
 3. **`tela-professor-dashboard`**: ao clicar numa turma, mostra uma tabela com uma linha por aluno: nome, barra de progresso visual (X/20 fases concluídas), pontuação total (número + ícone de estrela) e um botão "Redefinir" (senha). Já vem ordenada da maior para a menor pontuação (o backend ordena, o frontend só renderiza na ordem recebida). O botão de redefinir pede confirmação (`window.confirm`, avisando qual vai ser a nova senha) antes de chamar a API — a nova senha (PIN) do aluno passa a ser o código da turma.
 
-Sessão do professor persiste em `localStorage` (chave `calculoco_professor`), guardando `{ id, usuario, nome }`.
+Sessão do professor persiste em `localStorage` (chave `calculoco_professor`), guardando `{ id, usuario, nome, token }`. O `token` (assinado pelo backend no login/cadastro) é reenviado em todas as rotas protegidas via header `Authorization: Bearer`; se ele expirar/invalidar, uma resposta 401 desloga o professor com um aviso.
 
 **Lógica de inicialização** (`iniciar()` no fim do `app.js`): ao carregar a página, tenta primeiro restaurar sessão de **aluno**; se não houver, tenta restaurar sessão de **professor**; se nenhuma, mostra `tela-turma`. As duas sessões são independentes (chaves de `localStorage` diferentes).
 
@@ -272,6 +272,7 @@ PORT=3000
 AZURE_SPEECH_KEY=...                              # opcional: TTS (recurso Speech, plano F0)
 AZURE_SPEECH_REGION=brazilsouth                   # opcional: região do recurso Speech
 AZURE_SPEECH_VOICE=pt-BR-AntonioNeural            # opcional: voz usada
+SESSION_SECRET=string_longa_aleatoria             # opcional: assina a sessão do professor (cai em QUESTION_SECRET)
 ```
 
 `server.js` serve o frontend estático (`express.static`) a partir da pasta `frontend/`, então em produção/dev só precisa rodar `npm start` dentro de `backend/` e acessar `http://localhost:3000`.
@@ -288,7 +289,7 @@ Vêm da Declaração de Escopo e do Termo de Abertura do Projeto (TAP) já elabo
 
 ## 11. Limitações conhecidas / dívidas técnicas atuais
 
-- **Sem autenticação por sessão/JWT real**: tanto aluno quanto professor "logados" apenas guardam seus IDs no `localStorage` do navegador, e o frontend reenvia esses IDs em cada requisição (`aluno_id`, `professor_id`) para o backend confiar neles. Não há token de sessão assinado nem expiração de login — quem souber/adivinhar um `professor_id` (UUID) poderia, em teoria, chamar a API do dashboard diretamente. É um nível de segurança aceitável para um projeto acadêmico, mas **não é apropriado para produção real** sem evoluir para JWT ou sessões de verdade.
+- **Sessão do professor** usa um token assinado (HMAC) enviado no header `Authorization: Bearer`; o backend tira o `professor_id` do token (`exigirProfessor`), então saber o UUID de outro professor não basta para acessar as turmas dele. Já o **aluno** ainda não tem sessão assinada: as rotas de progresso confiam no `aluno_id` enviado pelo cliente, então alguém poderia gravar/ler progresso de outro aluno chamando a API direto. O token do professor não tem revogação (vale até expirar, 30 dias).
 - Sem recuperação de senha do professor. O aluno tem uma saída indireta: o professor pode redefinir o PIN dele para o código da turma (`POST /api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin`), mas o aluno não tem um fluxo de "esqueci minha senha" próprio.
 - Sem rate limiting nas rotas de login/cadastro (vulnerável a força bruta em teoria).
 - O dashboard do professor mostra só o **total agregado** de fases concluídas/pontuação por aluno — não quebra por módulo/operação (ex: não dá pra ver "esse aluno vai mal especificamente em divisão"). Foi cogitado como próximo passo.

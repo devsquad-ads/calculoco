@@ -60,12 +60,14 @@ const estado = {
 /* ===================== HELPERS DE API ===================== */
 
 async function chamarApi(caminho, opcoes = {}) {
-  const resposta = await fetch(`${API_URL}${caminho}`, {
-    headers: { "Content-Type": "application/json" },
-    ...opcoes,
-  });
+  const headers = { "Content-Type": "application/json", ...opcoes.headers };
+  if (estado.professor?.token) headers.Authorization = `Bearer ${estado.professor.token}`;
+
+  const resposta = await fetch(`${API_URL}${caminho}`, { ...opcoes, headers });
   const dados = await resposta.json().catch(() => ({}));
   if (!resposta.ok) {
+    // Sessão do professor expirou/invalidou: desloga e volta para o login.
+    if (resposta.status === 401 && estado.professor?.token) encerrarSessaoProfessor();
     const erro = new Error(dados.erro || "Ocorreu um erro inesperado.");
     erro.status = resposta.status;
     throw erro;
@@ -336,22 +338,33 @@ formProfessorAuth.addEventListener("submit", async (e) => {
       method: "POST",
       body: JSON.stringify(corpo),
     });
-    definirProfessorLogado(resultado.professor);
+    definirProfessorLogado(resultado.professor, resultado.token);
     await entrarAreaProfessor();
   } catch (erro) {
     profAvisoAuth.textContent = erro.message;
   }
 });
 
-function definirProfessorLogado(professor) {
-  estado.professor = professor;
-  localStorage.setItem(CHAVE_PROFESSOR, JSON.stringify(professor));
+function definirProfessorLogado(professor, token) {
+  estado.professor = { ...professor, token };
+  localStorage.setItem(CHAVE_PROFESSOR, JSON.stringify(estado.professor));
 }
 
-document.getElementById("prof-btn-sair").addEventListener("click", () => {
+function sairProfessor() {
   localStorage.removeItem(CHAVE_PROFESSOR);
   estado.professor = null;
   estado.turmasProfessor = null;
+}
+
+function encerrarSessaoProfessor() {
+  sairProfessor();
+  prepararTelaProfessorAuth();
+  mostrarTela("tela-professor-auth");
+  mostrarToast("Sua sessão expirou. Entre novamente.");
+}
+
+document.getElementById("prof-btn-sair").addEventListener("click", () => {
+  sairProfessor();
   mostrarTela("tela-turma");
 });
 

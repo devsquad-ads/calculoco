@@ -96,7 +96,9 @@ calculoco/
 
 ## 5. Segurança das perguntas
 
-A resposta correta **nunca** é enviada em texto aberto para o navegador. O backend assina um token (HMAC-SHA256, com validade de 5 minutos) contendo o índice da alternativa correta. O frontend devolve esse token junto com a resposta escolhida, e o backend confirma o acerto comparando a assinatura — assim não dá para "ver a resposta certa" só inspecionando a resposta da API.
+A resposta correta **nunca** é enviada em texto aberto para o navegador. O backend **criptografa** um token (AES-256-GCM, validade de 5 minutos) contendo o índice da alternativa correta; o token é opaco, então nem decodificando dá para ler a resposta. O frontend devolve esse token ao responder e o backend o descriptografa para conferir o acerto.
+
+Além disso, as rotas do professor exigem um **token de sessão** (devolvido no login/cadastro, enviado no header `Authorization: Bearer`): o backend tira o `professor_id` do token assinado, em vez de confiar no id que o navegador manda. Assim ninguém acessa turmas de outro professor só por saber o UUID dele.
 
 ## 6. Endpoints da área do professor
 
@@ -105,6 +107,8 @@ A resposta correta **nunca** é enviada em texto aberto para o navegador. O back
 | `POST /api/professores/cadastro` | Cria uma conta de professor `{ nome, usuario, senha }` |
 | `POST /api/professores/login` | Login do professor `{ usuario, senha }` |
 | `GET /api/professores/:professor_id/turmas` | Lista as turmas criadas por esse professor, com contagem de alunos |
+
+As rotas do professor (listar turmas, criar/excluir turma, dashboard, redefinir PIN) exigem o header `Authorization: Bearer <token>` devolvido no login/cadastro.
 | `POST /api/turmas` | Cria uma turma `{ nome_turma, professor_id }` (exige professor autenticado) |
 | `GET /api/turmas/:turma_id/desempenho?professor_id=...` | Dashboard: progresso de cada aluno da turma (só o professor dono da turma pode acessar) |
 | `POST /api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin` | Redefine o PIN do aluno para o código da turma `{ professor_id }` |

@@ -14,15 +14,20 @@ before(async () => {
 
 after(() => servidor.close());
 
+function excluir(turma, professor, extra = {}) {
+  return api.chamar(`/turmas/${turma.id}`, {
+    method: "DELETE",
+    token: professor?.token,
+    ...extra,
+  });
+}
+
 test("professor exclui a própria turma só de forma lógica (a linha continua no banco)", async () => {
   const professor = await api.criarProfessor();
   const turma = await api.criarTurma(professor);
   const aluno = await api.criarAluno(turma);
 
-  const { status, dados } = await api.chamar(`/turmas/${turma.id}`, {
-    method: "DELETE",
-    corpo: { professor_id: professor.id },
-  });
+  const { status, dados } = await excluir(turma, professor);
 
   assert.equal(status, 200);
   assert.deepEqual(dados, { ok: true });
@@ -38,9 +43,11 @@ test("turma excluída some da lista do professor, mas as outras continuam", asyn
   const fica = await api.criarTurma(professor, "Fica");
   const sai = await api.criarTurma(professor, "Sai");
 
-  await api.chamar(`/turmas/${sai.id}`, { method: "DELETE", corpo: { professor_id: professor.id } });
+  await excluir(sai, professor);
 
-  const { dados } = await api.chamar(`/professores/${professor.id}/turmas`);
+  const { dados } = await api.chamar(`/professores/${professor.id}/turmas`, {
+    token: professor.token,
+  });
   assert.deepEqual(dados.turmas.map((t) => t.id), [fica.id]);
 });
 
@@ -49,7 +56,7 @@ test("código de turma excluída não serve mais para entrar, logar nem se cadas
   const turma = await api.criarTurma(professor);
   const aluno = await api.criarAluno(turma, "maria", "2222");
 
-  await api.chamar(`/turmas/${turma.id}`, { method: "DELETE", corpo: { professor_id: professor.id } });
+  await excluir(turma, professor);
 
   assert.equal((await api.chamar(`/turmas/${turma.codigo}`)).status, 404);
 
@@ -71,50 +78,61 @@ test("dashboard e redefinição de PIN não funcionam em turma excluída", async
   const turma = await api.criarTurma(professor);
   const aluno = await api.criarAluno(turma);
 
-  await api.chamar(`/turmas/${turma.id}`, { method: "DELETE", corpo: { professor_id: professor.id } });
+  await excluir(turma, professor);
 
-  const dash = await api.chamar(`/turmas/${turma.id}/desempenho?professor_id=${professor.id}`);
+  const dash = await api.chamar(`/turmas/${turma.id}/desempenho`, { token: professor.token });
   assert.equal(dash.status, 404);
 
   const pin = await api.chamar(`/turmas/${turma.id}/alunos/${aluno.id}/redefinir-pin`, {
     method: "POST",
-    corpo: { professor_id: professor.id },
+    token: professor.token,
   });
   assert.equal(pin.status, 404);
 });
 
-test("outro professor não pode excluir a turma", async () => {
+test("sem token de professor, excluir responde 401", async () => {
   const dono = await api.criarProfessor();
-  const intruso = await api.criarProfessor();
   const turma = await api.criarTurma(dono);
 
-  const semId = await api.chamar(`/turmas/${turma.id}`, { method: "DELETE", corpo: {} });
-  assert.equal(semId.status, 403);
+  const semToken = await excluir(turma, null);
+  assert.equal(semToken.status, 401);
 
-  const outro = await api.chamar(`/turmas/${turma.id}`, {
+  const tokenInvalido = await api.chamar(`/turmas/${turma.id}`, {
     method: "DELETE",
-    corpo: { professor_id: intruso.id },
+    token: "nao.e.um.token.valido",
   });
-  assert.equal(outro.status, 403);
+  assert.equal(tokenInvalido.status, 401);
 
   const linha = supabase.tabelas.turmas.find((t) => t.id === turma.id);
   assert.equal(linha.excluida_em, null);
 });
 
+test("professor_id no corpo é ignorado: vale o dono do token, não quem o cliente diz ser", async () => {
+  const dono = await api.criarProfessor();
+  const intruso = await api.criarProfessor();
+  const turma = await api.criarTurma(dono);
+
+  // intruso tenta excluir se passando por dono no corpo — mas o token é dele
+  const tentativa = await excluir(turma, intruso, { corpo: { professor_id: dono.id } });
+  assert.equal(tentativa.status, 403);
+
+  const linha = supabase.tabelas.turmas.find((t) => t.id === turma.id);
+  assert.equal(linha.excluida_em, null, "a turma do dono não pode ser excluída pelo intruso");
+});
+
 test("excluir de novo uma turma já excluída responde 404", async () => {
   const professor = await api.criarProfessor();
   const turma = await api.criarTurma(professor);
-  const corpo = { professor_id: professor.id };
 
-  await api.chamar(`/turmas/${turma.id}`, { method: "DELETE", corpo });
-  const segunda = await api.chamar(`/turmas/${turma.id}`, { method: "DELETE", corpo });
+  await excluir(turma, professor);
+  const segunda = await excluir(turma, professor);
   assert.equal(segunda.status, 404);
 });
 
 test("código de turma excluída não é reaproveitado por uma turma nova", async () => {
   const professor = await api.criarProfessor();
   const turma = await api.criarTurma(professor);
-  await api.chamar(`/turmas/${turma.id}`, { method: "DELETE", corpo: { professor_id: professor.id } });
+  await excluir(turma, professor);
 
   const original = Math.random;
   const codigoRepetido = (Number(turma.codigo) - 1000) / 9000 + 1e-9;

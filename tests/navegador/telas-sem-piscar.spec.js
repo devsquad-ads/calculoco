@@ -71,7 +71,7 @@ test("aluno de turma excluída é deslogado com aviso", async ({ page, baseURL }
   const professor = await api.criarProfessor();
   const turma = await api.criarTurma(professor);
   const aluno = await api.criarAluno(turma);
-  await api.chamar(`/turmas/${turma.id}`, { method: "DELETE", corpo: { professor_id: professor.id } });
+  await api.chamar(`/turmas/${turma.id}`, { method: "DELETE", token: professor.token });
 
   await salvarNoStorage(page, { calculoco_aluno: { ...aluno, turma_codigo: turma.codigo } });
   await page.reload();

@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const supabase = require("../supabaseClient");
 const { TOTAL_FASES } = require("../utils/perguntas");
+const { exigirProfessor } = require("../utils/sessao");
 
 function gerarCodigo() {
   return String(Math.floor(1000 + Math.random() * 9000));
@@ -11,14 +12,12 @@ function gerarCodigo() {
 // POST /api/turmas  { nome_turma, professor_id }
 // Cadastro de turma. Exige um professor autenticado (professor_id vem do
 // login em /api/professores/login ou /cadastro). Gera um código único de 4 dígitos.
-router.post("/", async (req, res) => {
-  const { professor_id } = req.body;
+router.post("/", exigirProfessor, async (req, res) => {
+  const professor_id = req.professorId;
   const nomeTurmaLimpo = String(req.body.nome_turma || "").trim();
 
-  if (!nomeTurmaLimpo || !professor_id) {
-    return res
-      .status(400)
-      .json({ erro: "Informe o nome da turma e faça login como professor." });
+  if (!nomeTurmaLimpo) {
+    return res.status(400).json({ erro: "Informe o nome da turma." });
   }
 
   const { data: professor, error: erroProfessor } = await supabase
@@ -84,9 +83,9 @@ router.get("/:codigo", async (req, res) => {
 // GET /api/turmas/:turma_id/desempenho?professor_id=...
 // Dashboard do professor: lista os alunos da turma com um resumo do
 // progresso de cada um. Só o professor dono da turma pode acessar.
-router.get("/:turma_id/desempenho", async (req, res) => {
+router.get("/:turma_id/desempenho", exigirProfessor, async (req, res) => {
   const { turma_id } = req.params;
-  const { professor_id } = req.query;
+  const professor_id = req.professorId;
 
   const { data: turma, error: erroTurma } = await supabase
     .from("turmas")
@@ -152,9 +151,9 @@ router.get("/:turma_id/desempenho", async (req, res) => {
 // POST /api/turmas/:turma_id/alunos/:aluno_id/redefinir-pin  { professor_id }
 // Redefine o PIN do aluno para o código da turma — usado pelo professor
 // quando o aluno esquece a senha. Só o professor dono da turma pode.
-router.post("/:turma_id/alunos/:aluno_id/redefinir-pin", async (req, res) => {
+router.post("/:turma_id/alunos/:aluno_id/redefinir-pin", exigirProfessor, async (req, res) => {
   const { turma_id, aluno_id } = req.params;
-  const { professor_id } = req.body;
+  const professor_id = req.professorId;
 
   const { data: turma, error: erroTurma } = await supabase
     .from("turmas")
@@ -193,9 +192,9 @@ router.post("/:turma_id/alunos/:aluno_id/redefinir-pin", async (req, res) => {
 
 // DELETE /api/turmas/:turma_id  { professor_id }
 // Exclusão lógica: só marca excluida_em, alunos e progresso continuam no banco.
-router.delete("/:turma_id", async (req, res) => {
+router.delete("/:turma_id", exigirProfessor, async (req, res) => {
   const { turma_id } = req.params;
-  const { professor_id } = req.body || {};
+  const professor_id = req.professorId;
 
   const { data: turma, error: erroTurma } = await supabase
     .from("turmas")

@@ -1,10 +1,12 @@
 // Helpers para montar professor/turma/aluno via API nos testes.
 
 function criarClienteApi(url) {
-  async function chamar(caminho, { method = "GET", corpo } = {}) {
+  async function chamar(caminho, { method = "GET", corpo, token } = {}) {
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
     const resposta = await fetch(`${url}/api${caminho}`, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: corpo === undefined ? undefined : JSON.stringify(corpo),
     });
     const dados = await resposta.json().catch(() => ({}));
@@ -20,13 +22,14 @@ function criarClienteApi(url) {
       method: "POST",
       corpo: { nome, usuario, senha: "1234" },
     });
-    return { ...dados.professor, senha: "1234" };
+    return { ...dados.professor, senha: "1234", token: dados.token };
   }
 
   async function criarTurma(professor, nome_turma = "3º Ano B") {
     const { dados } = await chamar("/turmas", {
       method: "POST",
-      corpo: { nome_turma, professor_id: professor.id },
+      corpo: { nome_turma },
+      token: professor.token,
     });
     return dados;
   }

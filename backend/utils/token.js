@@ -1,44 +1,36 @@
 /**
- * A resposta correta de cada pergunta nunca é enviada "em aberto" ao
- * navegador. Em vez disso, assinamos um token (HMAC-SHA256) contendo o
- * índice correto e um prazo de expiração. O cliente devolve esse token
- * junto com a resposta escolhida, e o backend valida a assinatura antes
- * de confirmar se acertou ou errou.
+ * Protege a questão enviada ao navegador. O payload (índice correto, fase,
+ * hash do enunciado) é criptografado com AES-256-GCM usando uma chave
+ * derivada de QUESTION_SECRET, então o cliente não consegue ler a resposta
+ * certa nem forjar um token. Continua sem estado (nada é guardado no
+ * servidor), o que é necessário para rodar como função serverless.
  */
 
 const crypto = require("crypto");
 
 const SEGREDO = process.env.QUESTION_SECRET || "troque_este_segredo_no_env";
 const VALIDADE_MS = 5 * 60 * 1000; // 5 minutos
+const chave = crypto.createHash("sha256").update(SEGREDO).digest();
 
 function assinarQuestao(payload) {
-  const dados = { ...payload, exp: Date.now() + VALIDADE_MS };
-  const base = Buffer.from(JSON.stringify(dados)).toString("base64url");
-  const assinatura = crypto
-    .createHmac("sha256", SEGREDO)
-    .update(base)
-    .digest("base64url");
-  return `${base}.${assinatura}`;
+  const dados = JSON.stringify({ ...payload, exp: Date.now() + VALIDADE_MS });
+  const iv = crypto.randomBytes(12);
+  const cifra = crypto.createCipheriv("aes-256-gcm", chave, iv);
+  const texto = Buffer.concat([cifra.update(dados, "utf8"), cifra.final()]);
+  return [iv, texto, cifra.getAuthTag()].map((b) => b.toString("base64url")).join(".");
 }
 
 function verificarToken(token) {
-  if (typeof token !== "string" || !token.includes(".")) return null;
-  const [base, assinatura] = token.split(".");
-
-  const esperado = crypto
-    .createHmac("sha256", SEGREDO)
-    .update(base)
-    .digest("base64url");
-
-  if (
-    esperado.length !== assinatura.length ||
-    !crypto.timingSafeEqual(Buffer.from(esperado), Buffer.from(assinatura))
-  ) {
-    return null;
-  }
+  if (typeof token !== "string") return null;
+  const partes = token.split(".");
+  if (partes.length !== 3) return null;
 
   try {
-    const payload = JSON.parse(Buffer.from(base, "base64url").toString());
+    const [iv, texto, tag] = partes.map((p) => Buffer.from(p, "base64url"));
+    const decifra = crypto.createDecipheriv("aes-256-gcm", chave, iv);
+    decifra.setAuthTag(tag);
+    const aberto = Buffer.concat([decifra.update(texto), decifra.final()]).toString("utf8");
+    const payload = JSON.parse(aberto);
     if (!payload.exp || Date.now() > payload.exp) return null;
     return payload;
   } catch {
