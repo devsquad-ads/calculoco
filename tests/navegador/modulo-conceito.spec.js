@@ -11,22 +11,32 @@ async function abrirMenu(page, progresso = []) {
   await expect(page.locator("#tela-menu")).toHaveClass(/ativa/);
 }
 
-test("o desafio de conceitos aparece separado e já está liberado desde o início", async ({ page }) => {
+// As 20 fases das operações concluídas (o que libera o desafio de conceitos).
+function operacoesConcluidas() {
+  return Array.from({ length: 20 }, (_, i) => ({ fase_numero: i + 1, concluida: true, pontos: 20 }));
+}
+
+test("o desafio de conceitos aparece separado e fica travado até concluir as operações", async ({ page }) => {
   await abrirMenu(page);
 
-  // Fica fora da grade dos 4 módulos, na sua própria seção.
   await expect(page.locator(".area-conceito .cartao-conceito")).toBeVisible();
   await expect(page.locator("#secao-conceito")).toContainText("Qual é a conta?");
 
-  // A 1ª fase do conceito (21) está liberada mesmo sem concluir as operações.
-  await expect(page.locator('.cartao-conceito .nivel-btn[data-fase="21"]')).toBeEnabled();
-  await expect(page.locator('.cartao-conceito .nivel-btn[data-fase="22"]')).toBeDisabled();
-  // Enquanto a subtração (fase 6) continua bloqueada.
-  await expect(page.locator('.nivel-btn[data-fase="6"]')).toBeDisabled();
+  // Travado enquanto as 20 fases das operações não terminam.
+  await expect(page.locator(".cartao-conceito")).toHaveClass(/bloqueado/);
+  await expect(page.locator('.cartao-conceito .nivel-btn[data-fase="21"]')).toBeDisabled();
 });
 
-test("jogar o conceito: acerta, salva o progresso e desbloqueia o próximo nível", async ({ page }) => {
-  await abrirMenu(page);
+test("concluídas as 20 fases das operações, o desafio de conceitos libera", async ({ page }) => {
+  await abrirMenu(page, operacoesConcluidas());
+
+  await expect(page.locator(".cartao-conceito")).not.toHaveClass(/bloqueado/);
+  await expect(page.locator('.cartao-conceito .nivel-btn[data-fase="21"]')).toBeEnabled();
+  await expect(page.locator('.cartao-conceito .nivel-btn[data-fase="22"]')).toBeDisabled();
+});
+
+test("jogar o conceito liberado: acerta, salva o progresso e desbloqueia o próximo nível", async ({ page }) => {
+  await abrirMenu(page, operacoesConcluidas());
   await page.route("**/api/fases/*/verificar", (r) => r.fulfill({ json: { correta: true, correctIndex: 0 } }));
 
   await page.locator('.cartao-conceito .nivel-btn[data-fase="21"]').click();
@@ -42,7 +52,8 @@ test("jogar o conceito: acerta, salva o progresso e desbloqueia o próximo níve
   await page.locator("#btn-voltar-menu").click();
   await expect(page.locator('.cartao-conceito .nivel-btn[data-fase="21"]')).toHaveClass(/concluido/);
   await expect(page.locator('.cartao-conceito .nivel-btn[data-fase="22"]')).toBeEnabled();
-  await expect(page.locator("#placar-estrelas .badge-pontos")).toHaveText(/^20/);
+  // 20 fases × 20 + 20 da fase de conceito = 420 estrelas.
+  await expect(page.locator("#placar-estrelas .badge-pontos")).toHaveText(/^420/);
 });
 
 test("terminar a última operação não empurra para o conceito", async ({ page }) => {

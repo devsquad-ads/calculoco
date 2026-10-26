@@ -43,10 +43,13 @@ test("responsividade de todas as telas, de 320px a 1280px", async ({ page, baseU
   const professor = await api.criarProfessor("Professora Teste");
   const turma = await api.criarTurma(professor, "3º Ano B da Manhã");
   const aluno = await api.criarAluno(turma, "mariana-eduarda-cavalcanti", "1111");
-  await api.chamar("/progresso", {
-    method: "POST",
-    corpo: { aluno_id: aluno.id, fase_numero: 1, concluida: true, pontos: 20 },
-  });
+  // Conclui as 20 fases das operações para liberar o desafio de conceitos no audit.
+  for (let fase = 1; fase <= 20; fase++) {
+    await api.chamar("/progresso", {
+      method: "POST",
+      corpo: { aluno_id: aluno.id, fase_numero: fase, concluida: true, pontos: 20 },
+    });
+  }
 
   const todos = [];
 

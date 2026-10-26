@@ -111,7 +111,7 @@ Arquivo: `database/schema.sql`. O script é **idempotente**: usa `create table i
 - Cada módulo tem um **tema fixo** (igual ao cenário de fundo): Adição = Ilha (praia/aquário), Subtração = Mercado (mercado/cozinha), Multiplicação = Selva (parque/fazenda), Divisão = Vale (parque/fazenda). Os enunciados de cada módulo só usam contextos coerentes com o seu tema.
 - Cada módulo tem **5 níveis** de dificuldade crescente. As faixas numéricas são estreitas e os dois operandos ficam na mesma ordem de grandeza, então perguntas de um mesmo nível têm dificuldade parecida e a escada entre níveis sobe de forma suave (sem pular de `2+3` para `58+40`).
 - Total: **25 fases jogáveis** (20 de operações, fases 1–20; 5 de conceitos, fases 21–25).
-- O módulo de **conceitos** fica numa seção separada no menu e é **liberado desde o início** (fase 21 sempre disponível; 22–25 sequenciais dentro do módulo), independente da trilha das operações. O botão "Próximo nível" não atravessa de uma trilha para a outra.
+- O módulo de **conceitos** fica numa seção separada no menu e **só libera depois de concluir as 20 fases das operações** (progressão sequencial: a fase 21 precisa da fase 20 concluída; 22–25 seguem em sequência). O botão "Próximo nível" não atravessa de uma trilha para a outra: ao terminar a divisão (fase 20) o aluno volta ao menu e inicia o desafio de lá.
 - A tabela `progresso` guarda tudo por um único `fase_numero` inteiro (1–25), não por (módulo, nível) separados. A conversão módulo/nível ↔ fase_numero acontece **no frontend** (`app.js`), que calcula `fase_numero = (modulo.numero - 1) * 5 + nivel` ao abrir uma fase. O backend (`routes/fases.js`) recebe módulo e nível **já decompostos** a partir do número da fase:
   ```js
   function decompoeFase(numero) {
@@ -290,7 +290,7 @@ Vêm da Declaração de Escopo e do Termo de Abertura do Projeto (TAP) já elabo
 - **Fora do escopo, deliberadamente**: aplicativo mobile nativo (só web), modo multiplayer/online, redes sociais, qualquer coleta de dado pessoal identificável de aluno (nome completo, e-mail, documento).
 - **Critério pedagógico**: os enunciados são sempre problemas contextualizados do cotidiano infantil (mercado, escola, festa, fazenda, etc.), nunca só "a + b = ?" solto — isso é intencional, é o diferencial pedagógico do produto (BNCC valoriza resolução de problemas práticos, não só cálculo mecânico).
 - **Números sempre aleatórios** a cada tentativa (nunca hardcoded), para impedir que um aluno "cole" a resposta de outro que já jogou a mesma fase.
-- **Progressão estritamente sequencial**: um nível só abre depois do anterior concluído (dentro do módulo, e entre módulos também, já que a numeração de fase é global 1–25), com exceção do módulo de conceitos (fase 21), que é liberado desde o início.
+- **Progressão estritamente sequencial**: um nível só abre depois do anterior concluído (dentro do módulo, e entre módulos também, já que a numeração de fase é global 1–25, incluindo o módulo de conceitos).
 - Time de 4 pessoas (PO, Scrum Master/QA, 2 Devs), metodologia Scrum, sprints de ~2 semanas, ferramentas de gestão: Trello (backlog/board) + canal do YouTube (registro de reuniões).
 
 ## 11. Limitações conhecidas / dívidas técnicas atuais

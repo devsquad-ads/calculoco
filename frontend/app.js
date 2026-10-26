@@ -18,7 +18,7 @@ const MODULOS = [
 ];
 
 // Módulo 5, separado: testa o entendimento (qual operação usar), sem calcular.
-// Fica liberado desde o início, independente da trilha das operações.
+// Só libera depois de concluir os 4 módulos de operações (fase 20).
 const MODULO_CONCEITO = {
   numero: 5,
   titulo: "Qual é a conta?",
@@ -653,7 +653,6 @@ function faseConcluida(numero) {
 
 function faseDesbloqueada(numero) {
   if (numero === 1) return true;
-  if (numero === PRIMEIRA_FASE_CONCEITO) return true; // o módulo de conceitos é livre
   return faseConcluida(numero - 1);
 }
 

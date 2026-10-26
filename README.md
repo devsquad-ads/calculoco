@@ -15,7 +15,7 @@ Jogo educativo web para crianças praticarem as quatro operações básicas de m
 2. Sem login, o progresso fica salvo apenas no `localStorage` do navegador, sem vínculo com turma, professor ou banco de dados.
 3. Com o código da turma, cria uma conta (nome de usuário + PIN de 4 dígitos) ou faz login se já tiver uma; o progresso vai para o Supabase e aparece no dashboard do professor.
 4. No menu, vê **4 módulos** (Adição, Subtração, Multiplicação, Divisão), cada um com **5 níveis** de dificuldade crescente. Cada nível só desbloqueia depois que o anterior é concluído.
-5. Abaixo, numa seção separada, há um **5º módulo de conceitos** ("Qual é a conta?"): em vez de calcular, o aluno identifica qual operação a situação pede (ex.: "João tinha 3 lápis e comprou mais 2 — isso é adição, subtração, multiplicação ou divisão?"). Ele fica **liberado desde o início**, independente das operações. São 25 fases no total (20 de operações + 5 de conceitos).
+5. Abaixo, numa seção separada, há um **5º módulo de conceitos** ("Qual é a conta?"): em vez de calcular, o aluno identifica qual operação a situação pede (ex.: "João tinha 3 lápis e comprou mais 2 — isso é adição, subtração, multiplicação ou divisão?"). Ele fica numa seção separada e **só libera depois de concluir os 4 módulos de operações** (as 20 fases). São 25 fases no total (20 de operações + 5 de conceitos).
 5. Cada pergunta é gerada aleatoriamente, com um cenário temático (mercado, escola, fazenda, festa, aquário, parque, praia, casa) que muda o visual da tela.
 
 ### Professor
